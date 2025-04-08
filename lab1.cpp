@@ -1,3 +1,8 @@
+// --------------------------------------------lab1.cpp--------------------------------------------
+// Aldan Brown CSS 503
+// Date: 4/8/2025
+// ------------------------------------------------------------------------------------------------
+
 #include <iostream>    // cout, cerr
 #include <queue>       // stl queue
 #include <sys/types.h> // fork, wait
@@ -5,7 +10,6 @@
 #include <unistd.h>    // fork
 
 #include <stdlib.h> // for exit
-
 using namespace std;
 
 queue<int> pids; // stores a list of processes from the parent to a leaf process
@@ -29,7 +33,7 @@ void recursive_creation(int leaves) {
       // fork a right child
       int rightChild = fork();
       if (rightChild == 0) {
-         recursive_creation(leaves/2);
+         recursive_creation(leaves / 2);
          exit(0);
       }
 
@@ -38,7 +42,7 @@ void recursive_creation(int leaves) {
 
       exit(0);
 
-   } else { // I'm a leaf process
+   } else {                     // I'm a leaf process
       while (pids.size() > 0) { // print out a list of my ascendants
          cout << pids.front() << " ";
          pids.pop();
@@ -48,7 +52,7 @@ void recursive_creation(int leaves) {
    }
 }
 
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[]) {
    // validate arguments
    if (argc != 2) {
       cerr << "usage: lab1 #leaves" << endl;
