@@ -14,21 +14,30 @@ void recursive_creation(int leaves)
 
 {
 
-   if (leaves > 1)
-
-   {
+   if (leaves > 1) {
       pids.push(getpid());
+
       // fork a left child
+      int leftChild = fork();
+      if (leftChild == 0) {
+         recursive_creation(leaves / 2);
+         exit(0);
+      }
+
       // fork a right child
+      int rightChild = fork();
+      if (rightChild == 0) {
+         recursive_creation(leaves - (leaves / 2));
+         exit(0);
+      }
 
       // wait for one of the children
+
       // wait for the other child
 
       exit(0);
 
-   } else
-
-   { // I'm a leaf process
+   } else { // I'm a leaf process
       while (pids.size() > 0)
 
       { // print out a list of my ascendants
