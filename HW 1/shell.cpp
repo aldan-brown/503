@@ -9,25 +9,86 @@
 // background execution of commands using the '&' symbol. 
 // ------------------------------------------------------------------------------------------------
 
-#include <stdio.h>
+#include <iostream>    
+#include <queue>       
+#include <stdio.h>     
+#include <stdlib.h>   
+#include <sys/types.h> 
+#include <sys/wait.h>  
 #include <unistd.h>
+#include <vector>
+#include <string>
+#include <sstream>
 
-#define MAX_LINE 80 /* The maximum length command */
+using namespace std;
 
-int main(void) {
-   char* args[MAX_LINE / 2 + 1]; /* command line arguments */
-   int should_run = 1;           /* flag to determine when to exit program */
+/** Determines maximum character count on the console */
+const int MAX_LINE = 80; 
+
+int main() {
+   string input;
+   bool should_run = true; 
 
    while (should_run) {
-      printf("osh>");
-      fflush(stdout);
+      cout << "osh> " << flush; // Prompt for user
 
-      /**
-       * After reading user input, the steps are:
-       * (1) fork a child process using fork()
-       * (2) the child process will invoke execvp()
-       * (3) parent will invoke wait() unless command included &
-       */
+      getline(cin, input); // Pull in line upon hitting enter
+
+      if(input.empty()){
+         continue; //If no value, reprompt
+      }
+
+      //Pull in line from console into a stream, read each command, and enter into string vector
+      istringstream iss(input);
+      string token;
+      vector<string> tokens;
+      bool background = false; 
+
+      // Add commands to vector
+      while(iss >> token){
+         if(token == "&"){
+            background = true; // Run program in background
+         } else {
+            tokens.push_back(token);
+         }
+      }
+
+      // If no command, continue loop
+      if (tokens.empty()) {
+         continue;
+      }
+
+      // Exit command
+      if (tokens[0] == "exit") {
+         should_run = false;
+         continue;
+      }
+
+      // Convert vector<string> to char* array for execvp
+      vector<char*> args;
+      for (string& s : tokens) {
+         args.push_back(&s[0]); // Get pointer to string's internal buffer
+      }
+      args.push_back(nullptr); // Null-terminate for execvp
+
+      // Fork and exec
+      pid_t pid = fork();
+
+      if (pid < 0) {
+         cerr << "Fork failed." << endl;
+         exit(1);
+      } else if (pid == 0) {
+         // Child process
+         execvp(args[0], args.data()); // Execute command
+         cerr << "Command not found: " << args[0] << endl;
+         exit(1);
+      } else {
+         // Parent process
+         if (!background) {
+            waitpid(pid, nullptr, 0); // Wait for child unless background
+         }
+      }
    }
-   return 0;
-}
+
+   return 0; // Shell exits
+};
