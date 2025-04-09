@@ -27,7 +27,8 @@ const int MAX_LINE = 80;
 
 int main() {
    string input;
-   bool should_run = true; 
+   vector<string> history;
+   bool should_run = true;
 
    while (should_run) {
       cout << "osh> " << flush; // Prompt for user
@@ -64,6 +65,15 @@ int main() {
          continue;
       }
 
+      if (tokens[0] == "!!"){
+         if(history.empty()){
+            cout << "No command in history" << endl;
+            continue;
+         }else {
+            tokens = history;
+         }
+      }
+
       // Convert vector<string> to char* array for execvp
       vector<char*> args;
       for (string& s : tokens) {
@@ -83,6 +93,7 @@ int main() {
          cerr << "Command not found: " << args[0] << endl;
          exit(1);
       } else {
+         history = tokens;
          // Parent process
          if (!background) {
             waitpid(pid, nullptr, 0); // Wait for child unless background
