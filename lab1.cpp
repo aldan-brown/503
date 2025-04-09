@@ -26,16 +26,16 @@ void recursive_creation(int leaves) {
          exit(0);
       }
 
-      int status;
-      // wait for one of the children
-      wait(&status);
-
       // fork a right child
       int rightChild = fork();
       if (rightChild == 0) {
          recursive_creation(leaves / 2);
          exit(0);
       }
+
+      int status;
+      // wait for one of the children
+      wait(&status);
 
       // wait for the other child
       wait(&status);
