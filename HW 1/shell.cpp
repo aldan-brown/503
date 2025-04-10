@@ -3,31 +3,30 @@
 // Date Created: 4/9/2025
 // Date Modified: 4/9/2025
 // ------------------------------------------------------------------------------------------------
-// Description: This program implements a simple shell that can execute commands and handle 
-// input/output redirection. It uses fork and exec to create child processes for executing commands. 
+// Description: This program implements a simple shell that can execute commands and handle
+// input/output redirection. It uses fork and exec to create child processes for executing commands.
 // The shell continues to run until the user enters "exit" or "quit". The shell also supports
-// background execution of commands using the '&' symbol. 
+// background execution of commands using the '&' symbol.
 // ------------------------------------------------------------------------------------------------
 
-#include <iostream>    
-#include <queue>       
-#include <stdio.h>     
-#include <stdlib.h>   
-#include <sys/types.h> 
-#include <sys/wait.h>  
+#include <iostream>
+#include <queue>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
-#include <string>
-#include <sstream>
 
 using namespace std;
 
 /** Determines maximum character count on the console */
-const int MAX_LINE = 80; 
+const int MAX_LINE = 80;
 
 int main() {
-   string input;
-   vector<string> history;
+   string input, history;
    bool should_run = true;
 
    while (should_run) {
@@ -35,19 +34,19 @@ int main() {
 
       getline(cin, input); // Pull in line upon hitting enter
 
-      if(input.empty()){
-         continue; //If no value, reprompt
+      if (input.empty()) {
+         continue; // If no value, reprompt
       }
 
-      //Pull in line from console into a stream, read each command, and enter into string vector
+      // Pull in line from console into a stream, read each command, and enter into string vector
       istringstream iss(input);
       string token;
       vector<string> tokens;
-      bool background = false; 
+      bool background = false;
 
       // Add commands to vector
-      while(iss >> token){
-         if(token == "&"){
+      while (iss >> token) {
+         if (token == "&") {
             background = true; // Run program in background
          } else {
             tokens.push_back(token);
@@ -65,12 +64,25 @@ int main() {
          continue;
       }
 
-      if (tokens[0] == "!!"){
-         if(history.empty()){
+      // Check for repeat command
+      if (tokens[0] == "!!") {
+         if (history.empty()) {
             cout << "No command in history" << endl;
             continue;
-         }else {
-            tokens = history;
+         } else {
+            cout << history << endl;
+            input = history;
+            // Re-tokenize and execute the last command
+            iss.clear();
+            iss.str(history);
+            tokens.clear();
+            while (iss >> token) {
+               if (token == "&") {
+                  background = true;
+               } else {
+                  tokens.push_back(token);
+               }
+            }
          }
       }
 
@@ -93,8 +105,8 @@ int main() {
          cerr << "Command not found: " << args[0] << endl;
          exit(1);
       } else {
-         history = tokens;
          // Parent process
+         history = input; // Save last command (success)
          if (!background) {
             waitpid(pid, nullptr, 0); // Wait for child unless background
          }
