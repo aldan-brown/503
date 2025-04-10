@@ -45,12 +45,16 @@ int main() {
       string token;
       vector<string> tokens;
       bool background = false;
+      bool hasPipe = false;
 
       // Add commands to vector
       while (iss >> token) {
          if (token == "&") {
-            background = true; // Run program in background
+            background = true; // Run process in background
          } else {
+            if (token == "|") {
+               hasPipe == true; // Pipes to other process
+            }
             tokens.push_back(token);
          }
       }
@@ -82,6 +86,9 @@ int main() {
                if (token == "&") {
                   background = true;
                } else {
+                  if (token == "|") {
+                     hasPipe = true;
+                  }
                   tokens.push_back(token);
                }
             }
@@ -126,31 +133,35 @@ int main() {
       pid_t pid = fork();
 
       if (pid < 0) {
+         // Process error
          cerr << "Fork failed." << endl;
          exit(1);
       } else if (pid == 0) {
          // Child process
-         if (fileInput) { // Check input
+         // Check input
+         if (fileInput) {
             int fd = open(iFile.c_str(), O_RDONLY); // open file in read-only
-            if (fd < 0) { // Open error check
+            if (fd < 0) {                           // Error check
                cerr << "Input file open failed: " << iFile << endl;
                exit(1);
             }
             dup2(fd, STDIN_FILENO);
             close(fd);
          }
-
+         // Check output
          if (fileOutput) {
+            // Open file write only, create/truncate if needed, and set permissions
             int fd = open(oFile.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            if (fd < 0) {
-               cerr << "Output file open failed: "<< oFile << endl;
+            if (fd < 0) { // Error check
+               cerr << "Output file open failed: " << oFile << endl;
                exit(1);
             }
             dup2(fd, STDOUT_FILENO);
             close(fd);
          }
 
-         execvp(args[0], args.data()); // Execute command
+         // Execute command
+         execvp(args[0], args.data());
          cerr << "Command not found: " << args[0] << endl;
          exit(1);
       } else {
