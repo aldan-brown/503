@@ -1,0 +1,36 @@
+Script started on 2025-04-10 13:55:27-07:00 [TERM="xterm-256color" TTY="/dev/pts/3" COLUMNS="213" LINES="7"]
+]0;aldanb@csslab8:~/aldanbrown-documents/CSS-503/503[?2004h[aldanb@csslab8 503]$ g++ lab1.cpp
+[?2004l]0;aldanb@csslab8:~/aldanbrown-documents/CSS-503/503[?2004h[aldanb@csslab8 503]$ ./a.out 1
+[?2004l859074
+]0;aldanb@csslab8:~/aldanbrown-documents/CSS-503/503[?2004h[aldanb@csslab8 503]$ ./a.out 1[K2
+[?2004l859099 859100
+859099 859101
+]0;aldanb@csslab8:~/aldanbrown-documents/CSS-503/503[?2004h[aldanb@csslab8 503]$ ./a.out 2[K3
+[?2004l859131 859133
+859131 859132 859134
+859131 859132 859135
+]0;aldanb@csslab8:~/aldanbrown-documents/CSS-503/503[?2004h[aldanb@csslab8 503]$ ./a.out 323[K4
+[?2004l859176 859177 859179
+859176 859177 859180
+859176 859178 859181
+859176 859178 859182
+]0;aldanb@csslab8:~/aldanbrown-documents/CSS-503/503[?2004h[aldanb@csslab8 503]$ ./a.out 4[K5
+[?2004l859219 859220 859224
+859219 859221 859223
+859219 859220 859222 859225
+859219 859221 859226
+859219 859220 859222 859227
+]0;aldanb@csslab8:~/aldanbrown-documents/CSS-503/503[?2004h[aldanb@csslab8 503]$ ./a.out 5[K9
+[?2004l859247 859249 859251 859255
+859247 859248 859250 859256
+859247 859248 859252 859257
+859247 859249 859251 859259
+859247 859249 859253 859258
+859247 859248 859252 859261
+859247 859249 859253 859262
+859247 859248 859250 859254 859260
+859247 859248 859250 859254 859263
+]0;aldanb@csslab8:~/aldanbrown-documents/CSS-503/503[?2004h[aldanb@csslab8 503]$ exit
+[?2004lexit
+
+Script done on 2025-04-10 13:56:06-07:00 [COMMAND_EXIT_CODE="0"]
