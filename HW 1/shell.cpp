@@ -7,7 +7,12 @@
 // input/output redirection. It uses fork and exec to create child processes for executing
 // commands. The shell continues to run until the user enters "exit" or "quit". The shell also
 // supports background execution of commands using the '&' symbol, repeating commands using "!!",
-// and connection of commands together using "<" and ">".
+// redirection of commands using "<" and ">" and finally piping commands together using "|".
+// ------------------------------------------------------------------------------------------------
+// Assumptions:
+// 1) The !! command will save every command regardless of its success or failure.
+// 2) Commands will contain only one pipe character and will not be combined with any redirection
+// operators.
 // ------------------------------------------------------------------------------------------------
 
 #include <fcntl.h>
@@ -53,7 +58,7 @@ int main() {
             background = true; // Run process in background
          } else {
             if (token == "|") {
-               hasPipe == true; // Pipes to other process
+               hasPipe = true; // Pipes to other process
             }
             tokens.push_back(token);
          }
@@ -69,7 +74,7 @@ int main() {
          should_run = false;
          continue;
       }
-
+      // ------------------------------------------------------------------------------------------------
       // Check for repeat command
       if (tokens[0] == "!!") {
          if (history.empty()) {
@@ -95,7 +100,97 @@ int main() {
          }
       }
 
-      // Handle file inputs (<) and outputs (>)
+      // Save previous command
+      history = input;
+
+      // ------------------------------------------------------------------------------------------------
+      // Pipe handling
+      if (hasPipe) {
+         vector<string> left_cmd, right_cmd;
+         bool found_pipe = false;
+
+         for (string& tok : tokens) {
+            if (tok == "|") {
+               found_pipe = true;
+            } else if (!found_pipe) {
+               left_cmd.push_back(tok);
+            } else {
+               right_cmd.push_back(tok);
+            }
+         }
+
+         if (left_cmd.empty() || right_cmd.empty()) {
+            cerr << "Invalid pipe usage" << endl;
+            continue;
+         }
+
+         // Create pipe
+         int pipefd[2];
+         if (pipe(pipefd) == -1) {
+            cerr << "Pipe creation failed" << endl;
+            continue;
+         }
+
+         pid_t pid1 = fork();
+
+         if (pid1 < 0) {
+            cerr << "Fork failed for first command" << endl;
+            continue;
+         }
+
+         if (pid1 == 0) {
+            // Write to pipe
+            close(pipefd[0]);               
+            dup2(pipefd[1], STDOUT_FILENO); 
+            close(pipefd[1]);
+
+            vector<char*> args;
+            for (string& s : left_cmd)
+               args.push_back(&s[0]);
+            args.push_back(nullptr);
+
+            execvp(args[0], args.data());
+            cerr << "Command not found or failed to execute: '" << args[0] << "'" << endl;
+            exit(1);
+         }
+
+         pid_t pid2 = fork();
+
+         if (pid2 < 0) {
+            cerr << "Fork failed for second command" << endl;
+            continue;
+         }
+
+         if (pid2 == 0) {
+            // Read from pipe
+            close(pipefd[1]);
+            dup2(pipefd[0], STDIN_FILENO); 
+            close(pipefd[0]);
+
+            vector<char*> args;
+            for (string& s : right_cmd)
+               args.push_back(&s[0]);
+            args.push_back(nullptr);
+
+            execvp(args[0], args.data());
+            cerr << "Command not found or failed to execute: '" << args[0] << "'" << endl;
+            exit(1);
+         }
+
+         // Parent process
+         close(pipefd[0]);
+         close(pipefd[1]);
+
+         if (!background) {
+            waitpid(pid1, nullptr, 0);
+            waitpid(pid2, nullptr, 0);
+         }
+
+         continue;
+      }
+
+      // ------------------------------------------------------------------------------------------------
+      // Handle redirection inputs (<) and outputs (>)
       bool fileInput = false;
       bool fileOutput = false;
       string iFile, oFile;
@@ -122,6 +217,7 @@ int main() {
          }
       }
 
+      // ------------------------------------------------------------------------------------------------
       // Convert vector<string> to char* array for execvp
       vector<char*> args;
       for (string& s : tokens) {
@@ -166,7 +262,6 @@ int main() {
          exit(1);
       } else {
          // Parent process
-         history = input; // Save last command (success)
          if (!background) {
             waitpid(pid, nullptr, 0); // Wait for child unless background
          }
