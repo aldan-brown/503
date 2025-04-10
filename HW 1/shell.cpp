@@ -4,10 +4,10 @@
 // Date Modified: 4/9/2025
 // ------------------------------------------------------------------------------------------------
 // Description: This program implements a simple shell that can execute commands and handle
-// input/output redirection. It uses fork and exec to create child processes for executing commands.
-// The shell continues to run until the user enters "exit" or "quit". The shell also supports
-// background execution of commands using the '&' symbol, repeating commands using "!!", and 
-// connection of commands together using "<" and ">".
+// input/output redirection. It uses fork and exec to create child processes for executing 
+// commands. The shell continues to run until the user enters "exit" or "quit". The shell also 
+// supports background execution of commands using the '&' symbol, repeating commands using "!!", 
+// and connection of commands together using "<" and ">".
 // ------------------------------------------------------------------------------------------------
 
 #include <iostream>
