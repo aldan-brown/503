@@ -1,13 +1,13 @@
 // --------------------------------------------shell.cpp-------------------------------------------
 // Aldan Brown CSS 503
 // Date Created: 4/9/2025
-// Date Modified: 4/9/2025
+// Date Modified: 4/14/2025
 // ------------------------------------------------------------------------------------------------
 // Description: This program implements a simple shell that can execute commands and handle
 // input/output redirection. It uses fork and exec to create child processes for executing
 // commands. The shell continues to run until the user enters "exit" or "quit". The shell also
-// supports background execution of commands using the '&' symbol, repeating commands using "!!",
-// redirection of commands using "<" and ">" and finally piping commands together using "|".
+// supports background execution of commands using the '&' symbol, repeating commands using '!!',
+// redirection of commands using '<' and '>' and finally piping commands together using '|'.
 // ------------------------------------------------------------------------------------------------
 // Assumptions:
 // 1) The !! command will save every command regardless of its success or failure.
@@ -75,7 +75,7 @@ int main() {
          continue;
       }
       // ------------------------------------------------------------------------------------------------
-      // Check for repeat command
+      // Check for History command (!!)
       if (tokens[0] == "!!") {
          if (history.empty()) {
             cout << "No command in history" << endl;
@@ -104,22 +104,24 @@ int main() {
       history = input;
 
       // ------------------------------------------------------------------------------------------------
-      // Pipe handling
+      // Pipe handling (|)
       if (hasPipe) {
-         vector<string> left_cmd, right_cmd;
-         bool found_pipe = false;
+         // Enters command into left until pipe string found, then switches to right
+         vector<string> leftCmd, rightCmd;
+         bool pipeSeparator = false;
 
          for (string& tok : tokens) {
             if (tok == "|") {
-               found_pipe = true;
-            } else if (!found_pipe) {
-               left_cmd.push_back(tok);
+               pipeSeparator = true;
+            } else if (!pipeSeparator) {
+               leftCmd.push_back(tok);
             } else {
-               right_cmd.push_back(tok);
+               rightCmd.push_back(tok);
             }
          }
 
-         if (left_cmd.empty() || right_cmd.empty()) {
+         // Pipe error check
+         if (leftCmd.empty() || rightCmd.empty()) {
             cerr << "Invalid pipe usage" << endl;
             continue;
          }
@@ -132,20 +134,22 @@ int main() {
          }
 
          pid_t pid1 = fork();
-
+         // Error check
          if (pid1 < 0) {
             cerr << "Fork failed for first command" << endl;
             continue;
          }
 
+         // Child process
          if (pid1 == 0) {
             // Write to pipe
-            close(pipefd[0]);               
-            dup2(pipefd[1], STDOUT_FILENO); 
+            close(pipefd[0]);
+            dup2(pipefd[1], STDOUT_FILENO);
             close(pipefd[1]);
 
+            // Convert command to c-string
             vector<char*> args;
-            for (string& s : left_cmd)
+            for (string& s : leftCmd)
                args.push_back(&s[0]);
             args.push_back(nullptr);
 
@@ -156,19 +160,22 @@ int main() {
 
          pid_t pid2 = fork();
 
+         // Error check
          if (pid2 < 0) {
             cerr << "Fork failed for second command" << endl;
             continue;
          }
 
+         // Child process
          if (pid2 == 0) {
             // Read from pipe
             close(pipefd[1]);
-            dup2(pipefd[0], STDIN_FILENO); 
+            dup2(pipefd[0], STDIN_FILENO);
             close(pipefd[0]);
 
+            // Convert command to c-string
             vector<char*> args;
-            for (string& s : right_cmd)
+            for (string& s : rightCmd)
                args.push_back(&s[0]);
             args.push_back(nullptr);
 
@@ -181,6 +188,7 @@ int main() {
          close(pipefd[0]);
          close(pipefd[1]);
 
+         // Wait unless running in background
          if (!background) {
             waitpid(pid1, nullptr, 0);
             waitpid(pid2, nullptr, 0);
@@ -218,12 +226,13 @@ int main() {
       }
 
       // ------------------------------------------------------------------------------------------------
-      // Convert vector<string> to char* array for execvp
+      // Standard command execution
+      // Convert command to c-string
       vector<char*> args;
       for (string& s : tokens) {
-         args.push_back(&s[0]); // Get pointer to string's internal buffer
+         args.push_back(&s[0]);
       }
-      args.push_back(nullptr); // Null-terminate for execvp
+      args.push_back(nullptr);
 
       // Fork and exec
       pid_t pid = fork();
@@ -236,8 +245,9 @@ int main() {
          // Child process
          // Check input
          if (fileInput) {
-            int fd = open(iFile.c_str(), O_RDONLY); // open file in read-only
-            if (fd < 0) {                           // Error check
+            // Open file in read-only
+            int fd = open(iFile.c_str(), O_RDONLY);
+            if (fd < 0) { // Error check
                cerr << "Input file open failed: " << iFile << endl;
                exit(1);
             }
