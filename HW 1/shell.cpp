@@ -17,7 +17,6 @@
 
 #include <fcntl.h>
 #include <iostream>
-#include <queue>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,7 +73,7 @@ int main() {
          should_run = false;
          continue;
       }
-      // ------------------------------------------------------------------------------------------------
+      // ------------------------------------------------------------------------------------------
       // Check for History command (!!)
       if (tokens[0] == "!!") {
          if (history.empty()) {
@@ -103,7 +102,7 @@ int main() {
       // Save previous command
       history = input;
 
-      // ------------------------------------------------------------------------------------------------
+      // ------------------------------------------------------------------------------------------
       // Pipe handling (|)
       if (hasPipe) {
          // Enters command into left until pipe string found, then switches to right
@@ -197,7 +196,7 @@ int main() {
          continue;
       }
 
-      // ------------------------------------------------------------------------------------------------
+      // ------------------------------------------------------------------------------------------
       // Handle redirection inputs (<) and outputs (>)
       bool fileInput = false;
       bool fileOutput = false;
@@ -225,7 +224,7 @@ int main() {
          }
       }
 
-      // ------------------------------------------------------------------------------------------------
+      // ------------------------------------------------------------------------------------------
       // Standard command execution
       // Convert command to c-string
       vector<char*> args;
