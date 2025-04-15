@@ -75,7 +75,7 @@ int main() {
          should_run = false;
          continue;
       }
-      
+
       // ------------------------------------------------------------------------------------------
       // Check for History command (!!)
       if (tokens[0] == "!!") {
