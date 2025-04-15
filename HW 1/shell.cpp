@@ -156,7 +156,7 @@ int main() {
             args.push_back(nullptr);
 
             execvp(args[0], args.data());
-            cerr << "Command not found or failed to execute: '" << args[0] << "'" << endl;
+            cerr << "Command not found or failed to execute: " << args[0] << endl;
             exit(1);
          }
 
@@ -182,7 +182,7 @@ int main() {
             args.push_back(nullptr);
 
             execvp(args[0], args.data());
-            cerr << "Command not found or failed to execute: '" << args[0] << "'" << endl;
+            cerr << "Command not found or failed to execute: " << args[0] << endl;
             exit(1);
          }
 
