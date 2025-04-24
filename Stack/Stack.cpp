@@ -1,3 +1,8 @@
+// --------------------------------------------Stack.cpp--------------------------------------------
+// Aldan Brown CSS 503
+// Date: 4/24/2025
+// ------------------------------------------------------------------------------------------------
+
 #include "Stack.h"
 
 Stack::Stack() { 
@@ -25,7 +30,7 @@ bool Stack::pop(int& val) {
       val = head->value;
       Node* temp = head;
       head = head->next;
-      // mutex unlock - if true
+      // mutex unlock - if true, wait until all modifications are complete
       pthread_mutex_unlock(&lock);
       delete temp;
       return true;
