@@ -1,5 +1,5 @@
-#ifndef SHOP_ORG_H_
-#define SHOP_ORG_H_
+#pragma once
+
 #include <iostream>
 #include <pthread.h>
 #include <queue>
@@ -9,14 +9,14 @@ using namespace std;
 
 #define kDefaultNumChairs 3
 
-class Shop_org {
+class Shop {
  public:
-   Shop_org(int num_chairs)
+   Shop(int num_chairs)
        : max_waiting_cust_((num_chairs > 0) ? num_chairs : kDefaultNumChairs),
          customer_in_chair_(0), in_service_(false), money_paid_(false), cust_drops_(0) {
       init();
    };
-   Shop_org()
+   Shop()
        : max_waiting_cust_(kDefaultNumChairs), customer_in_chair_(0), in_service_(false),
          money_paid_(false), cust_drops_(0) {
       init();
@@ -50,4 +50,3 @@ class Shop_org {
    string int2string(int i);
    void print(int person, string message);
 };
-#endif

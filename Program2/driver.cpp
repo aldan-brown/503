@@ -1,7 +1,8 @@
-#include "shop_org.h"
+#include "shop.h"
 #include <iostream>
 #include <sys/time.h>
 #include <unistd.h>
+
 using namespace std;
 
 void* barber(void*);
@@ -12,9 +13,9 @@ void* customer(void*);
 // than one argument to a thread.
 class ThreadParam {
  public:
-   ThreadParam(Shop_org* shop, int id, int service_time)
+   ThreadParam(Shop* shop, int id, int service_time)
        : shop(shop), id(id), service_time(service_time) {};
-   Shop_org* shop;
+   Shop* shop;
    int id;
    int service_time;
 };
@@ -34,7 +35,7 @@ int main(int argc, char* argv[]) {
    // Single barber, one shop, many customers
    pthread_t barber_thread;
    pthread_t customer_threads[num_customers];
-   Shop_org shop(num_chairs);
+   Shop shop(num_chairs);
 
    ThreadParam* barber_param = new ThreadParam(&shop, 0, service_time);
    pthread_create(&barber_thread, NULL, barber, barber_param);
@@ -58,7 +59,7 @@ int main(int argc, char* argv[]) {
 
 void* barber(void* arg) {
    ThreadParam* barber_param = (ThreadParam*)arg;
-   Shop_org& shop = *barber_param->shop;
+   Shop& shop = *barber_param->shop;
    int service_time = barber_param->service_time;
    delete barber_param;
 
@@ -72,7 +73,7 @@ void* barber(void* arg) {
 
 void* customer(void* arg) {
    ThreadParam* customer_param = (ThreadParam*)arg;
-   Shop_org& shop = *customer_param->shop;
+   Shop& shop = *customer_param->shop;
    int id = customer_param->id;
    delete customer_param;
 
