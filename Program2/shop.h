@@ -12,7 +12,8 @@
 // wakes up one of the barbers.
 // ------------------------------------------------------------------------------------------------
 // Assumptions:
-//
+// ------------------------------------------------------------------------------------------------
+// Acknowledgements: Initial code provided by Prof. Robert Dimpsey on 4/25/25
 // ------------------------------------------------------------------------------------------------
 
 #pragma once
@@ -31,7 +32,7 @@ using namespace std;
 
 class Shop {
  public:
-   // -----------------------------------Constructors/Destructor-----------------------------------
+   //------------------------------------Constructors/Destructor-----------------------------------
    /** Default constructor */
    Shop();
 
@@ -43,36 +44,40 @@ class Shop {
    /** Destructor */
    ~Shop();
 
-   // --------------------------------------Public Functions---------------------------------------
+   //---------------------------------------Public Functions---------------------------------------
 
    /** Executes shop visit by a customer
    @param id the customer's id number
    @return returns true when a customer gets a service, false otherwise */
-   bool visitShop(int id);
+   bool visitShop(const int id);
 
    /** Finishes a customer visit
    @param customer_id the customer to be served
    @param barber_id either the id of the barber who served the cusomter or -1 if none available */
-   void leaveShop(int customer_id, int barber_id);
+   void leaveShop(const int customer_id, const int barber_id);
 
+   /** Barber takes in customer
+   @param id the customer to be served */
+   void helloCustomer(const int id);
 
+   /** Barber releases customer
+   @param id the customer to be served */
+   void byeCustomer(const int id);
 
-   void helloCustomer(int id);
-
-   void byeCustomer(int id);
-
+   /** Number of customers that wait too long and leave
+   @return number of drops  */
    int get_cust_drops() const;
 
-   // ---------------------------------------------------------------------------------------------
+   //---------------------------------------Private Functions--------------------------------------
 
  private:
    const int max_waiting_cust_; // the max number of threads that can wait
    const int max_barbers_;      // the max number of barbers that can serve
-   int customer_in_chair_;
-   bool in_service_;
-   bool money_paid_;
-   queue<int> waiting_chairs_; // includes the ids of all waiting threads
-   int cust_drops_;
+   int customer_in_chair_;      // ID of customer in the chair
+   bool in_service_;            // True if barber is servicing, false otherwise
+   bool money_paid_;            // True if money was paid, false otherwise
+   queue<int> waiting_chairs_;  // includes the ids of all waiting threads
+   int cust_drops_;             // Number of dropped customers (left the shop)
 
    // Mutexes and condition variables to coordinate threads
    // mutex_ is used in conjuction with all conditional variables
@@ -84,7 +89,16 @@ class Shop {
 
    static const int barber = 0; // the id of the barber thread
 
+   /** Initializes thread mutex and cond */
    void init();
-   string int2string(int i);
-   void print(int person, string message);
+
+   /** Converts integer to string value for printing
+   @param i integer to convert
+   @return string of integer */
+   string int2string(const int i);
+
+   /** Prints either the customer (positive) or barber (negative) along with the action taken.
+   @param person id of the individual ID
+   @param message action taken */
+   void print(const int person, const string message) const;
 };

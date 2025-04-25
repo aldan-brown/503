@@ -1,3 +1,14 @@
+// --------------------------------------------driver.cpp--------------------------------------------
+// Aldan Brown CSS 503
+// Date Created: 4/25/2025
+// Date Modified: 4/25/2025
+// ------------------------------------------------------------------------------------------------
+// Description: Main file running shop.h/shop.cpp barber shop programs. Contains threads for
+// barbers and maintains lists of customers and chairs.
+// ------------------------------------------------------------------------------------------------
+// Acknowledgements: Initial code provided by Prof. Robert Dimpsey on 4/25/25
+// ------------------------------------------------------------------------------------------------
+
 #include "shop.h"
 #include <iostream>
 #include <sys/time.h>
@@ -20,6 +31,7 @@ class ThreadParam {
    int service_time;
 };
 
+// main(int, char*[])
 int main(int argc, char* argv[]) {
 
    // Read arguments from command line
@@ -28,14 +40,16 @@ int main(int argc, char* argv[]) {
       cout << "Usage: num_chairs num_customers service_time" << endl;
       return -1;
    }
-   int num_chairs = atoi(argv[1]);
-   int num_customers = atoi(argv[2]);
-   int service_time = atoi(argv[3]);
+   
+   int num_barbers = atoi(argv[1]);
+   int num_chairs = atoi(argv[2]);
+   int num_customers = atoi(argv[3]);
+   int service_time = atoi(argv[4]);
 
    // Single barber, one shop, many customers
    pthread_t barber_thread;
    pthread_t customer_threads[num_customers];
-   Shop shop(num_chairs);
+   Shop shop(num_barbers, num_chairs);
 
    ThreadParam* barber_param = new ThreadParam(&shop, 0, service_time);
    pthread_create(&barber_thread, NULL, barber, barber_param);
@@ -57,6 +71,7 @@ int main(int argc, char* argv[]) {
    return 0;
 }
 
+// barber(void*)
 void* barber(void* arg) {
    ThreadParam* barber_param = (ThreadParam*)arg;
    Shop& shop = *barber_param->shop;
@@ -71,6 +86,7 @@ void* barber(void* arg) {
    return nullptr;
 }
 
+// customer(void*)
 void* customer(void* arg) {
    ThreadParam* customer_param = (ThreadParam*)arg;
    Shop& shop = *customer_param->shop;

@@ -24,27 +24,10 @@ Shop::Shop(const int num_barbers, const int num_chairs)
    init();
 }
 
-void Shop::init() {
-   pthread_mutex_init(&mutex_, NULL);
-   pthread_cond_init(&cond_customers_waiting_, NULL);
-   pthread_cond_init(&cond_customer_served_, NULL);
-   pthread_cond_init(&cond_barber_paid_, NULL);
-   pthread_cond_init(&cond_barber_sleeping_, NULL);
-}
+// --------------------------------------Public Functions---------------------------------------
 
-string Shop::int2string(int i) {
-   stringstream out;
-   out << i;
-   return out.str();
-}
-
-void Shop::print(int person, string message) {
-   cout << ((person != barber) ? "customer[" : "barber  [") << person << "]: " << message << endl;
-}
-
-int Shop::get_cust_drops() const { return cust_drops_; }
-
-bool Shop::visitShop(int id) {
+// visitShop(int)
+bool Shop::visitShop(const int id) {
    pthread_mutex_lock(&mutex_);
 
    // If all chairs are full then leave shop
@@ -77,11 +60,12 @@ bool Shop::visitShop(int id) {
    return true;
 }
 
-void Shop::leaveShop(int id) {
+// leaveShop(int)
+void Shop::leaveShop(const int customer_id, const int barber_id) {
    pthread_mutex_lock(&mutex_);
 
    // Wait for service to be completed
-   print(id, "wait for the hair-cut to be done");
+   print(customer_id, "wait for the hair-cut to be done");
    while (in_service_ == true) {
       pthread_cond_wait(&cond_customer_served_, &mutex_);
    }
@@ -89,11 +73,12 @@ void Shop::leaveShop(int id) {
    // Pay the barber and signal barber appropriately
    money_paid_ = true;
    pthread_cond_signal(&cond_barber_paid_);
-   print(id, "says good-bye to the barber.");
+   print(customer_id, "says good-bye to the barber.");
    pthread_mutex_unlock(&mutex_);
 }
 
-void Shop::helloCustomer() {
+// helloCustomer(int)
+void Shop::helloCustomer(const int id) {
    pthread_mutex_lock(&mutex_);
 
    // If no customers than barber can sleep
@@ -111,7 +96,8 @@ void Shop::helloCustomer() {
    pthread_mutex_unlock(&mutex_);
 }
 
-void Shop::byeCustomer() {
+// byeCustomer(int)
+void Shop::byeCustomer(const int id) {
    pthread_mutex_lock(&mutex_);
 
    // Hair Cut-Service is done so signal customer and wait for payment
@@ -129,4 +115,29 @@ void Shop::byeCustomer() {
    pthread_cond_signal(&cond_customers_waiting_);
 
    pthread_mutex_unlock(&mutex_); // unlock
+}
+
+int Shop::get_cust_drops() const { return cust_drops_; }
+
+//---------------------------------------Private Functions--------------------------------------
+
+// init()
+void Shop::init() {
+   pthread_mutex_init(&mutex_, NULL);
+   pthread_cond_init(&cond_customers_waiting_, NULL);
+   pthread_cond_init(&cond_customer_served_, NULL);
+   pthread_cond_init(&cond_barber_paid_, NULL);
+   pthread_cond_init(&cond_barber_sleeping_, NULL);
+}
+
+// int2string(int)
+string Shop::int2string(const int i) {
+   stringstream out;
+   out << i;
+   return out.str();
+}
+
+// print(int, string)
+void Shop::print(int person, string message) const {
+   cout << ((person != barber) ? "customer[" : "barber  [") << person << "]: " << message << endl;
 }
