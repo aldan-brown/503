@@ -1,5 +1,28 @@
+// --------------------------------------------shop.cpp--------------------------------------------
+// Aldan Brown CSS 503
+// Date Created: 4/25/2025
+// Date Modified: 4/25/2025
+// ------------------------------------------------------------------------------------------------
+// Description: Implementation of shop.h
+// ------------------------------------------------------------------------------------------------
 
 #include "shop.h"
+
+// ------------------------------------Constructors/Destructor-------------------------------------
+// Constructor
+Shop::Shop()
+    : max_barbers_(kDefaultBarbers), max_waiting_cust_(kDefaultNumChairs), customer_in_chair_(0),
+      in_service_(false), money_paid_(false), cust_drops_(0) {
+   init();
+}
+
+// Constructor (int, int)
+Shop::Shop(const int num_barbers, const int num_chairs)
+    : max_barbers_((num_barbers > 0) ? num_barbers : kDefaultBarbers),
+      max_waiting_cust_((num_chairs > 0) ? num_chairs : kDefaultNumChairs), customer_in_chair_(0),
+      in_service_(false), money_paid_(false), cust_drops_(0) {
+   init();
+}
 
 void Shop::init() {
    pthread_mutex_init(&mutex_, NULL);
