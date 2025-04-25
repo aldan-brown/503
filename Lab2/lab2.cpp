@@ -15,21 +15,25 @@ void* thread_func(void* arg) {
    delete (int*)arg;
 
    for (int loop = 0; loop < 10; loop++) // Run 10 times
-
    {
       // enter the critical section
+      pthread_mutex_lock(&mutex);
 
       while (turn != id) {
-
+         pthread_cond_wait(&cond[id], &mutex);
          // wait until the (id - 1)th thread signals me.
       }
 
       cout << "thread[" << id << "] got " << loop << "th turn" << endl;
 
       // signal the next thread
+      turn = (id + 1) % nThreads;
+      pthread_cond_signal(&cond[turn]);
 
       // leave the critical section
+      pthread_mutex_unlock(&mutex);
    }
+   return NULL;
 }
 
 int main(int argc, char* argv[]) {
@@ -47,6 +51,7 @@ int main(int argc, char* argv[]) {
       return -1;
    }
 
+   pthread_mutex_init(&mutex, NULL);
    pthread_t* tid = new pthread_t[nThreads]; // an array of thread identifiers
    cond = new pthread_cond_t[nThreads];      // an array of condition variables
    turn = 0;                                 // points to which thread should run
