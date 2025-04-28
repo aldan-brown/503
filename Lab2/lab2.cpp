@@ -1,3 +1,9 @@
+//--------------------------------------------lab2.cpp---------------------------------------------
+// CSS 503 - Lab 2
+// Created by: Aldan Brown and Matthew Van Ginneken
+// Date:4/8/2025
+//-------------------------------------------------------------------------------------------------
+
 #include <iostream>
 #include <pthread.h>
 #include <stdio.h>
@@ -20,15 +26,14 @@ void* thread_func(void* arg) {
       pthread_mutex_lock(&mutex);
 
       while (turn != id) {
-         pthread_cond_wait(&cond[id], &mutex);
-         // wait until the (id - 1)th thread signals me.
+         pthread_cond_wait(&cond[id], &mutex); // wait until the (id - 1)th thread signals me.
       }
 
       cout << "thread[" << id << "] got " << loop << "th turn" << endl;
 
       // signal the next thread
-      turn = (id + 1) % nThreads;
-      pthread_cond_signal(&cond[turn]);
+      turn = (id + 1) % nThreads; // Update the turn using modulation to loop
+      pthread_cond_signal(&cond[turn]); // Signal next thread
 
       // leave the critical section
       pthread_mutex_unlock(&mutex);
