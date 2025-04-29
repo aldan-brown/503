@@ -36,8 +36,8 @@ int main(int argc, char* argv[]) {
 
    // Read arguments from command line
    // TODO: Validate values
-   if (argc != 4) {
-      cout << "Usage: num_chairs num_customers service_time" << endl;
+   if (argc != 5) {
+      cout << "Usage: num_barbers num_chairs num_customers service_time" << endl;
       return -1;
    }
 
@@ -92,6 +92,8 @@ void* barber(void* arg) {
       usleep(service_time);
       shop.byeCustomer(id); // release the customer
    }
+
+   return NULL;
 }
 
 // customer(void*)
@@ -106,4 +108,6 @@ void* customer(void* arg) {
    if ((barber = shop.visitShop(id)) != -1) {
       shop.leaveShop(id, barber); // wait until my service is finished
    }
+
+   return NULL;
 }

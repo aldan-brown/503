@@ -97,7 +97,7 @@ int Shop::visitShop(const int id) {
 
    // Mutex unlock
    pthread_mutex_unlock(&mutex_);
-   return true;
+   return assigned_barber;
 }
 
 // leaveShop(int)
@@ -146,7 +146,7 @@ void Shop::byeCustomer(const int id) {
 
    // Hair Cut-Service is done so signal customer and wait for payment
    in_service_[id] = false;
-   print(barber,
+   print(-id,
          "says he's done with a hair-cut service for " + int2string(customer_in_chair_[id]));
    money_paid_[id] = false;
    pthread_cond_signal(&cond_customer_served_[id]);
@@ -156,7 +156,7 @@ void Shop::byeCustomer(const int id) {
 
    // Signal to customer to get next one
    customer_in_chair_[id] = 0;
-   print(barber, "calls in another customer");
+   print(-id, "calls in another customer");
    pthread_cond_signal(&cond_customers_waiting_);
 
    pthread_mutex_unlock(&mutex_); // unlock
