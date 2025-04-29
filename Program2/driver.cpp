@@ -86,6 +86,7 @@ void* barber(void* arg) {
    int id = param.id;
    int service_time = param.service_time;
    delete &param;
+
    // keep working until being terminated by the main
    while (true) {
       shop.helloCustomer(id); // pick up a new customer
@@ -102,6 +103,7 @@ void* customer(void* arg) {
    Shop& shop = *(param.shop);
    int id = param.id;
    delete &param;
+
    // if assigned to barber i then wait for service to finish
    // -1 means did not get barber
    int barber = -1;

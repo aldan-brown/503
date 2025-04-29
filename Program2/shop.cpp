@@ -100,7 +100,7 @@ int Shop::visitShop(const int id) {
 
          // Pop customer from waiting chair queue
          if (assigned_barber != -1) {
-            waiting_chairs_.pop(); 
+            waiting_chairs_.pop();
             break;
          }
       }
@@ -112,7 +112,7 @@ int Shop::visitShop(const int id) {
 
    // Wake up the assigned barber
    pthread_cond_signal(&cond_barber_sleeping_[assigned_barber]);
-   
+
    // Mutex unlock
    pthread_mutex_unlock(&mutex_);
    return assigned_barber;
