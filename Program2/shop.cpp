@@ -191,5 +191,5 @@ string Shop::int2string(const int i) {
 
 // print(int, string)
 void Shop::print(int person, string message) const {
-   cout << ((person != barber) ? "customer[" : "barber  [") << person << "]: " << message << endl;
+   cout << ((person > barber) ? "customer[" : "barber  [") << person << "]: " << message << endl;
 }
