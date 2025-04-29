@@ -23,6 +23,7 @@
 #include <queue>
 #include <sstream>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -49,7 +50,7 @@ class Shop {
    /** Executes shop visit by a customer
    @param id the customer's id number
    @return returns true when a customer gets a service, false otherwise */
-   bool visitShop(const int id);
+   int visitShop(const int id);
 
    /** Finishes a customer visit
    @param customer_id the customer to be served
@@ -57,11 +58,11 @@ class Shop {
    void leaveShop(const int customer_id, const int barber_id);
 
    /** Barber takes in customer
-   @param id the customer to be served */
+   @param id the barber at work */
    void helloCustomer(const int id);
 
    /** Barber releases customer
-   @param id the customer to be served */
+   @param id the barber freeing up */
    void byeCustomer(const int id);
 
    /** Number of customers that wait too long and leave
@@ -73,19 +74,19 @@ class Shop {
  private:
    const int max_waiting_cust_; // the max number of threads that can wait
    const int max_barbers_;      // the max number of barbers that can serve
-   int customer_in_chair_;      // ID of customer in the chair
-   bool in_service_;            // True if barber is servicing, false otherwise
-   bool money_paid_;            // True if money was paid, false otherwise
+   vector<int> customer_in_chair_;      // IDs of customer in the chair
+   vector<bool> in_service_;            // True if barber is servicing, false otherwise
+   vector<bool> money_paid_;            // True if money was paid, false otherwise
    queue<int> waiting_chairs_;  // includes the ids of all waiting threads
    int cust_drops_;             // Number of dropped customers (left the shop)
 
-   // Mutexes and condition variables to coordinate threads
+   // Mutexes and condition variables to coordinate threads using vectors
    // mutex_ is used in conjuction with all conditional variables
    pthread_mutex_t mutex_;
    pthread_cond_t cond_customers_waiting_;
-   pthread_cond_t cond_customer_served_;
-   pthread_cond_t cond_barber_paid_;
-   pthread_cond_t cond_barber_sleeping_;
+   vector<pthread_cond_t> cond_customer_served_;
+   vector<pthread_cond_t> cond_barber_paid_;
+   vector<pthread_cond_t> cond_barber_sleeping_;
 
    static const int barber = 0; // the id of the barber thread
 

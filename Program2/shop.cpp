@@ -10,24 +10,42 @@
 
 // ------------------------------------Constructors/Destructor-------------------------------------
 // Constructor
-Shop::Shop()
-    : max_barbers_(kDefaultBarbers), max_waiting_cust_(kDefaultNumChairs), customer_in_chair_(0),
-      in_service_(false), money_paid_(false), cust_drops_(0) {
+Shop::Shop() : max_barbers_(kDefaultBarbers), max_waiting_cust_(kDefaultNumChairs), cust_drops_(0) {
+   customer_in_chair_.resize(max_barbers_, 0);
+   // Resize vectors
+   in_service_.resize(max_barbers_, false);
+   money_paid_.resize(max_barbers_, false);
+   // Initialize threads
    init();
 }
 
 // Constructor (int, int)
 Shop::Shop(const int num_barbers, const int num_chairs)
     : max_barbers_((num_barbers > 0) ? num_barbers : kDefaultBarbers),
-      max_waiting_cust_((num_chairs > 0) ? num_chairs : kDefaultNumChairs), customer_in_chair_(0),
-      in_service_(false), money_paid_(false), cust_drops_(0) {
+      max_waiting_cust_((num_chairs > 0) ? num_chairs : kDefaultNumChairs), cust_drops_(0) {
+   // Resize vectors
+   customer_in_chair_.resize(max_barbers_, 0);
+   in_service_.resize(max_barbers_, false);
+   money_paid_.resize(max_barbers_, false);
+   // Initialize threads
    init();
+}
+
+// Destructor
+Shop::~Shop() {
+   pthread_mutex_destroy(&mutex_);
+   pthread_cond_destroy(&cond_customers_waiting_);
+   for (int i = 0; i < max_barbers_; ++i) {
+      pthread_cond_destroy(&cond_customer_served_[i]);
+      pthread_cond_destroy(&cond_barber_paid_[i]);
+      pthread_cond_destroy(&cond_barber_sleeping_[i]);
+   }
 }
 
 // --------------------------------------Public Functions---------------------------------------
 
 // visitShop(int)
-bool Shop::visitShop(const int id) {
+int Shop::visitShop(const int id) {
    pthread_mutex_lock(&mutex_);
 
    // If all chairs are full then leave shop
@@ -35,7 +53,16 @@ bool Shop::visitShop(const int id) {
       print(id, "leaves the shop because of no available waiting chairs.");
       ++cust_drops_;
       pthread_mutex_unlock(&mutex_);
-      return false;
+      return -1;
+   }
+
+   // Find next available barber id
+   int assigned_barber = -1;
+   for (int i = 0; i < max_barbers_; ++i) {
+      if (customer_in_chair_[i] == 0) {
+         assigned_barber = i;
+         break;
+      }
    }
 
    // If someone is being served or transitioning waiting to service chair
@@ -125,9 +152,15 @@ int Shop::get_cust_drops() const { return cust_drops_; }
 void Shop::init() {
    pthread_mutex_init(&mutex_, NULL);
    pthread_cond_init(&cond_customers_waiting_, NULL);
-   pthread_cond_init(&cond_customer_served_, NULL);
-   pthread_cond_init(&cond_barber_paid_, NULL);
-   pthread_cond_init(&cond_barber_sleeping_, NULL);
+   cond_customer_served_.resize(max_barbers_);
+   cond_barber_paid_.resize(max_barbers_);
+   cond_barber_sleeping_.resize(max_barbers_);
+
+   for (int i = 0; i < max_barbers_; i++) {
+      pthread_cond_init(&cond_customer_served_[i], NULL);
+      pthread_cond_init(&cond_barber_paid_[i], NULL);
+      pthread_cond_init(&cond_barber_sleeping_[i], NULL);
+   }
 }
 
 // int2string(int)

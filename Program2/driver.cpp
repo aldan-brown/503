@@ -46,14 +46,18 @@ int main(int argc, char* argv[]) {
    int num_customers = atoi(argv[3]);
    int service_time = atoi(argv[4]);
 
-   // Single barber, one shop, many customers
-   pthread_t barber_thread;
+   // Many barbers, one shop, many customers
+   pthread_t barber_thread[num_barbers];
    pthread_t customer_threads[num_customers];
    Shop shop(num_barbers, num_chairs);
 
-   ThreadParam* barber_param = new ThreadParam(&shop, 0, service_time);
-   pthread_create(&barber_thread, NULL, barber, barber_param);
+   // Create barbers threads
+   for (int i = 0; i < num_barbers; i++){
+      ThreadParam* barber_param = new ThreadParam(&shop, i, service_time);
+      pthread_create(&barber_thread[i], NULL, barber, barber_param);
+   }
 
+   // Create customer threads
    for (int i = 0; i < num_customers; i++) {
       usleep(rand() % 1000);
       int id = i + 1;
@@ -65,7 +69,10 @@ int main(int argc, char* argv[]) {
    for (int i = 0; i < num_customers; i++) {
       pthread_join(customer_threads[i], NULL);
    }
-   pthread_cancel(barber_thread);
+
+   for (int i = 0; i < num_barbers; i++){
+      pthread_cancel(barber_thread[i]);
+   }
 
    cout << "# customers who didn't receive a service = " << shop.get_cust_drops() << endl;
    return 0;
@@ -73,28 +80,30 @@ int main(int argc, char* argv[]) {
 
 // barber(void*)
 void* barber(void* arg) {
-   ThreadParam* barber_param = (ThreadParam*)arg;
-   Shop& shop = *barber_param->shop;
-   int service_time = barber_param->service_time;
-   delete barber_param;
-
+   // extract parameters
+   ThreadParam& param = *(ThreadParam*)arg;
+   Shop& shop = *(param.shop);
+   int id = param.id;
+   int service_time = param.service_time;
+   delete &param;
+   // keep working until being terminated by the main
    while (true) {
-      shop.helloCustomer();
+      shop.helloCustomer(id); // pick up a new customer
       usleep(service_time);
-      shop.byeCustomer();
+      shop.byeCustomer(id); // release the customer
    }
-   return nullptr;
 }
 
 // customer(void*)
 void* customer(void* arg) {
-   ThreadParam* customer_param = (ThreadParam*)arg;
-   Shop& shop = *customer_param->shop;
-   int id = customer_param->id;
-   delete customer_param;
-
-   if (shop.visitShop(id) == true) {
-      shop.leaveShop(id);
+   ThreadParam& param = *(ThreadParam*)arg;
+   Shop& shop = *(param.shop);
+   int id = param.id;
+   delete &param;
+   // if assigned to barber i then wait for service to finish
+   // -1 means did not get barber
+   int barber = -1;
+   if ((barber = shop.visitShop(id)) != -1) {
+      shop.leaveShop(id, barber); // wait until my service is finished
    }
-   return nullptr;
 }
