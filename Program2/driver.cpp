@@ -1,7 +1,7 @@
 // --------------------------------------------driver.cpp--------------------------------------------
 // Aldan Brown CSS 503
 // Date Created: 4/25/2025
-// Date Modified: 4/25/2025
+// Date Modified: 4/29/2025
 // ------------------------------------------------------------------------------------------------
 // Description: Main file running shop.h/shop.cpp barber shop programs. Contains threads for
 // barbers and maintains lists of customers and chairs.
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
       cout << "Usage: num_chairs num_customers service_time" << endl;
       return -1;
    }
-   
+
    int num_barbers = atoi(argv[1]);
    int num_chairs = atoi(argv[2]);
    int num_customers = atoi(argv[3]);
@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
    Shop shop(num_barbers, num_chairs);
 
    // Create barbers threads
-   for (int i = 0; i < num_barbers; i++){
+   for (int i = 0; i < num_barbers; i++) {
       ThreadParam* barber_param = new ThreadParam(&shop, i, service_time);
       pthread_create(&barber_thread[i], NULL, barber, barber_param);
    }
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
       pthread_join(customer_threads[i], NULL);
    }
 
-   for (int i = 0; i < num_barbers; i++){
+   for (int i = 0; i < num_barbers; i++) {
       pthread_cancel(barber_thread[i]);
    }
 

@@ -1,7 +1,7 @@
 // ---------------------------------------------shop.h---------------------------------------------
 // Aldan Brown CSS 503
 // Date Created: 4/25/2025
-// Date Modified: 4/25/2025
+// Date Modified: 4/29/2025
 // ------------------------------------------------------------------------------------------------
 // Description: This program implements an extention of the barbershop problem.
 // A barbershop consists of a waiting room with n waiting chairs and a barber room with m barber
@@ -72,13 +72,13 @@ class Shop {
    //---------------------------------------Private Functions--------------------------------------
 
  private:
-   const int max_waiting_cust_; // the max number of threads that can wait
-   const int max_barbers_;      // the max number of barbers that can serve
-   vector<int> customer_in_chair_;      // IDs of customer in the chair
-   vector<bool> in_service_;            // True if barber is servicing, false otherwise
-   vector<bool> money_paid_;            // True if money was paid, false otherwise
-   queue<int> waiting_chairs_;  // includes the ids of all waiting threads
-   int cust_drops_;             // Number of dropped customers (left the shop)
+   const int max_waiting_cust_;    // the max number of threads that can wait
+   const int max_barbers_;         // the max number of barbers that can serve
+   vector<int> customer_in_chair_; // IDs of customer in the chair
+   vector<bool> in_service_;       // True if barber is servicing, false otherwise
+   vector<bool> money_paid_;       // True if money was paid, false otherwise
+   queue<int> waiting_chairs_;     // includes the ids of all waiting threads
+   int cust_drops_;                // Number of dropped customers (left the shop)
 
    // Mutexes and condition variables to coordinate threads using vectors
    // mutex_ is used in conjuction with all conditional variables
