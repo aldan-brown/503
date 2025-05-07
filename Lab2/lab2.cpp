@@ -32,7 +32,7 @@ void* thread_func(void* arg) {
       cout << "thread[" << id << "] got " << loop << "th turn" << endl;
 
       // signal the next thread
-      turn = (id + 1) % nThreads; // Update the turn using modulation to loop
+      turn = (id + 1) % nThreads;       // Update the turn using modulation to loop
       pthread_cond_signal(&cond[turn]); // Signal next thread
 
       // leave the critical section
@@ -42,9 +42,7 @@ void* thread_func(void* arg) {
 }
 
 int main(int argc, char* argv[]) {
-   if (argc != 2)
-
-   {
+   if (argc != 2) {
       cerr << "usage: lab2 #threads" << endl;
       return -1;
    }
