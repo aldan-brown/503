@@ -38,7 +38,7 @@ int main()
       close(pipeFD[READ]); 
       dup2(pipeFD[WRITE], 1);   //stdout is now child's read pipe
       execlp("/bin/ls", "ls", "-l", NULL);
-      // process is overlayed so does not execut past here...
+      // process is overlayed so does not execute past here...
    }
    else   //Parent 
    {
