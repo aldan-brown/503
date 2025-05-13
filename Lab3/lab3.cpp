@@ -47,16 +47,12 @@ int main(int argc, char* argv[]) {
    char* buf = new char[bytes];
 
    // linux i/o
-
    int fd = open(filename, O_RDONLY);
-
    if (fd == -1) {
       cerr << filename << " not found" << endl;
       return -1;
    }
-
    startTimer();
-
    while (read(fd, buf, bytes) > 0){
       ;
    }
@@ -64,12 +60,34 @@ int main(int argc, char* argv[]) {
    close(fd);
 
    // standard i/o
-
    // write the same functionality as in linux i/o
-
    // but use fopen(), fgetc(), fread(), and fclose( )
-
    // use fgetc() if bytes == 1
 
+   FILE* file = fopen(filename, "rb");
+
+   if (file == nullptr) {
+      cerr << filename << " not found" << endl;
+      return -1;
+   }
+
+   if (bytes == 1) {
+      int fileChar;
+      startTimer();
+      while((fileChar = fgetc(file))!= EOF){
+         ;
+      }
+      stopTimer("Standard fgetc");
+   } else {
+      startTimer();
+      while(fread(buf, 1, bytes, file)){
+         ;
+      }
+      stopTimer("Standard fread");
+   }
+   fclose(file);
+
+   delete[] buf;
+   
    return 0;
 }
