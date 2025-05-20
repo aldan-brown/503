@@ -105,9 +105,9 @@ FILE* fopen(const char* path, const char* mode) {
    return stream;
 }
 
-/** Gets the next character from the specified stream and advances the position indicator for the
+/** Gets the next character from the specified file and advances the position indicator for the
   * stream.
- @param stream input stream
+ @param stream input file
  @return Returns the character read from the stream as an unsigned char cast to an int. If the
          end-of-file is encountered or an error occurs, the function returns -1 */
 int fgetc(FILE* stream) {
@@ -144,7 +144,7 @@ int fgetc(FILE* stream) {
   * end-of-file is reached, whichever comes first.
  @param str char array where the string will be stored
  @param size number of characters to read, including termination ('\0')
- @param stream input stream
+ @param stream input file
  @return Pointer to the string of the line read in, or NULL if an error occurs */
 char* fgets(char* str, int size, FILE* stream) {
    // Error checking
@@ -199,13 +199,18 @@ char* fgets(char* str, int size, FILE* stream) {
  @param ptr A pointer to a block of memory where the read data will be stored.
  @param size The size, in bytes, of each element to be read.
  @param nmemb The number of elements, each of size bytes, to be read.
- @param stream imput stream
+ @param stream input file
  @return The number of elements successfully read or zero if an error occurs */
 size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
    // Error check
-   if(size < 1 || nmemb < 1){
+   if (!stream || stream->fd < 0 || size < 1 || nmemb < 1) {
       return 0;
    }
+
+   
+
+
+
 
    // complete it
    return 0;
