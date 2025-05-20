@@ -35,21 +35,29 @@ class FILE {
 
    //----------------------------------------Read Functions----------------------------------------
    /** Opens a file given file name
-   @param path A string representing the name of the file to be opened. This can include an absolute
-   or relative path.
-   @param mode A string representing the mode in which the file should be opened
-   @return a FILE pointer if successfully opened or NULL if not */
+    @param path A string representing the name of the file to be opened. This can include an absolute
+                  or relative path.
+    @param mode A string representing the mode in which the file should be opened
+    @return a FILE pointer if successfully opened or NULL if not */
    FILE* fopen(const char* path, const char* mode);
 
-   /** Opens a file given file name
-   @param path A string representing the name of the file to be opened. This can include an
-   absolute or relative path.
-
-   @return a FILE pointer if successfully opened or NULL if not */
+   /** Gets the next character from the specified stream and advances the position indicator for the 
+     * stream.
+    @param stream input stream
+    @return Returns the character read from the stream as an unsigned char cast to an int. If the 
+            end-of-file is encountered or an error occurs, the function returns -1 */
    int fgetc(FILE* stream);
 
-
+   /** Reads a line from the specified stream and stores it into the string pointed to by str. It
+     * stops when either (size-1) characters are read, the newline character is read, or the 
+     * end-of-file is reached, whichever comes first.
+    @param str char array where the string will be stored
+    @param size number of characters to read, including termination ('\0')
+    @param stream input stream 
+    @return Pointer to the string of the line read in, or NULL if an error occurs */
    char* fgets(char* str, int size, FILE* stream);
+
+
    size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream);
    int fseek(FILE* stream, long offset, int whence);
    int fclose(FILE* stream);

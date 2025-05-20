@@ -118,14 +118,81 @@ FILE* FILE::fopen(const char* path, const char* mode) {
 
 // fgetc(FILE*)
 int fgetc(FILE* stream) {
-   // complete it
-   return 0;
+   // Check if stream is null or file descriptor is invalid
+   if (!stream || stream->fd < 0) {
+      return -1;
+   }
+
+   // Check if in write mode and resets buffer. Sets read mode
+   if (stream->lastop != 'r') {
+      stream->pos = 0;
+      stream->actual_size = 0;
+   }
+   stream->lastop = 'r';
+
+   // Checks if buffer is empty and needs to be refilled
+   if (stream->pos >= stream->actual_size) {
+      ssize_t bytes_read = read(stream->fd, stream->buffer, stream->size);
+      // EOF check
+      if (bytes_read <= 0) {
+         stream->eof = true;
+         return -1;
+      }
+      // Notes the new filled buffer size and sets position to start of the buffer
+      stream->actual_size = bytes_read;
+      stream->pos = 0;
+   }
+
+   return static_cast<unsigned char>(stream->buffer[stream->pos++]);
 }
 
-// fgets(char*)
+// fgets(char*, int, FILE*)
 char* fgets(char* str, int size, FILE* stream) {
-   // complete it
-   return NULL;
+   // Error checking
+   if (!stream || stream->fd < 0 || !str || size <= 1) {
+      if (str && size > 0){
+         str[0] = '\0';
+      }
+      return NULL;
+   }
+
+   // Check if in write mode and resets buffer. Sets read mode
+   if (stream->lastop != 'r') {
+      stream->pos = 0;
+      stream->actual_size = 0;
+   }
+   stream->lastop = 'r';
+
+   // Loop until characters read or new line reached
+   int currentPos = 0;
+   while (currentPos < size - 1) {
+      // Checks if buffer is empty and needs to be refilled
+      if (stream->pos >= stream->actual_size) {
+         ssize_t bytes_read = read(stream->fd, stream->buffer, stream->size);
+         // EOF check
+         if (bytes_read <= 0) {
+            stream->eof = true;
+            // No characters read because eof reached
+            if(currentPos == 0){
+               return NULL;
+            }
+            break;
+         }
+         // Notes the new filled buffer size and sets position to start of the buffer
+         stream->actual_size = bytes_read;
+         stream->pos = 0;
+      }
+      // Pulls in next 
+      char currentChar = stream->buffer[stream->pos++];
+      str[currentPos] = currentChar;
+      if(currentChar == '\n'){
+         break;
+      }
+   }
+
+   // Set the end of the string
+   str[currentPos] = '\0';
+   return str;
 }
 
 // fread(void*, size_t, size_t, FILE*)
