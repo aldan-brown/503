@@ -1,3 +1,23 @@
+// --------------------------------------------stdio.h---------------------------------------------
+// Aldan Brown CSS 503
+// Date Created: 5/20/2025
+// Date Modified: 5/20/2025
+// ------------------------------------------------------------------------------------------------
+// Description: This program is a self-implementation of core input and output functions in the
+// C/C++ standard I/O library : <stdio.h>.
+// ------------------------------------------------------------------------------------------------
+// Notes:
+// 1) Many files were already provided: stdio.h, stdio.cpp, eval.cpp, driver.cpp, compile.h,
+// eval_tests.sh, and a number of test .txt files.
+// 2) The stdio.h and stdio.cpp files have been reformatted for clarity including a reorder of
+// functions to better match project spec (program_3.docx), comment formatting, function
+// declarations in stdio.h, and more.
+// ------------------------------------------------------------------------------------------------
+// Assumptions:
+// ------------------------------------------------------------------------------------------------
+// Acknowledgements: Initial code provided by Prof. Robert Dimpsey
+// ------------------------------------------------------------------------------------------------
+
 #ifndef _MY_STDIO_H_
 #define _MY_STDIO_H_
 
@@ -9,19 +29,47 @@
 
 class FILE {
  public:
-   FILE() {
-      fd = 0;
-      pos = 0;
-      buffer = (char*)0;
-      size = 0;
-      actual_size = 0;
-      mode = _IONBF;
-      flag = 0;
-      bufown = false;
-      lastop = 0;
-      eof = false;
-   }
+   //------------------------------------Constructor/Destructor------------------------------------
+   /** Default constructor */
+   FILE();
 
+   //----------------------------------------Read Functions----------------------------------------
+   /** Opens a file given file name
+   @param path A string representing the name of the file to be opened. This can include an absolute
+   or relative path.
+   @param mode A string representing the mode in which the file should be opened
+   @return a FILE pointer if successfully opened or NULL if not */
+   FILE* fopen(const char* path, const char* mode);
+
+   /** Opens a file given file name
+   @param path A string representing the name of the file to be opened. This can include an
+   absolute or relative path.
+
+   @return a FILE pointer if successfully opened or NULL if not */
+   int fgetc(FILE* stream);
+
+
+   char* fgets(char* str, int size, FILE* stream);
+   size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream);
+   int fseek(FILE* stream, long offset, int whence);
+   int fclose(FILE* stream);
+
+   //----------------------------------------Write Functions---------------------------------------
+   size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream);
+   int fputc(int c, FILE* stream);
+   int fputs(const char* str, FILE* stream);
+
+   //--------------------------------------Auxillary Functions-------------------------------------
+   int feof(FILE* stream);
+   int fflush(FILE* stream);
+   int fpurge(FILE* stream);
+   int setvbuf(FILE* stream, char* buf, int mode, size_t size);
+   void setbuf(FILE* stream, char* buf);
+   int printf(const void* format, ...);
+   char* itoa(const int arg);
+   int recursive_itoa(int arg);
+
+   //------------------------------------------Variables-------------------------------------------
    int fd;          // a Unix file descriptor of an opened file
    int pos;         // the current file position in the buffer
    char* buffer;    // an input or output file stream buffer
