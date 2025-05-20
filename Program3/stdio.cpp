@@ -21,24 +21,13 @@ using namespace std;
 
 char decimal[100];
 
-//------------------------------------Constructor/Destructor------------------------------------
-// Constructor
-FILE::FILE() {
-   fd = 0;
-   pos = 0;
-   buffer = (char*)0;
-   size = 0;
-   actual_size = 0;
-   mode = _IONBF;
-   flag = 0;
-   bufown = false;
-   lastop = 0;
-   eof = false;
-}
-
 //-----------------------------------------Read Functions------------------------------------------
-// fopen(char*, char*)
-FILE* FILE::fopen(const char* path, const char* mode) {
+/** Opens a file given file name
+    @param path A string representing the name of the file to be opened. This can include an
+   absolute or relative path.
+    @param mode A string representing the mode in which the file should be opened
+    @return a FILE pointer if successfully opened or NULL if not */
+FILE* fopen(const char* path, const char* mode) {
    FILE* stream = new FILE();
    setvbuf(stream, (char*)0, _IOFBF, BUFSIZ);
 
@@ -116,7 +105,11 @@ FILE* FILE::fopen(const char* path, const char* mode) {
    return stream;
 }
 
-// fgetc(FILE*)
+/** Gets the next character from the specified stream and advances the position indicator for the
+  * stream.
+ @param stream input stream
+ @return Returns the character read from the stream as an unsigned char cast to an int. If the
+         end-of-file is encountered or an error occurs, the function returns -1 */
 int fgetc(FILE* stream) {
    // Check if stream is null or file descriptor is invalid
    if (!stream || stream->fd < 0) {
@@ -146,7 +139,13 @@ int fgetc(FILE* stream) {
    return static_cast<unsigned char>(stream->buffer[stream->pos++]);
 }
 
-// fgets(char*, int, FILE*)
+/** Reads a line from the specified stream and stores it into the string pointed to by str. It
+  * stops when either (size-1) characters are read, the newline character is read, or the
+  * end-of-file is reached, whichever comes first.
+ @param str char array where the string will be stored
+ @param size number of characters to read, including termination ('\0')
+ @param stream input stream
+ @return Pointer to the string of the line read in, or NULL if an error occurs */
 char* fgets(char* str, int size, FILE* stream) {
    // Error checking
    if (!stream || stream->fd < 0 || !str || size <= 1) {
@@ -195,20 +194,31 @@ char* fgets(char* str, int size, FILE* stream) {
    return str;
 }
 
-// fread(void*, size_t, size_t, FILE*)
-size_t FILE::fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
+
+/** Reads data from the given stream into the array pointed to by ptr.
+ @param ptr A pointer to a block of memory where the read data will be stored.
+ @param size The size, in bytes, of each element to be read.
+ @param nmemb The number of elements, each of size bytes, to be read.
+ @param stream imput stream
+ @return The number of elements successfully read or zero if an error occurs */
+size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
+   // Error check
+   if(size < 1 || nmemb < 1){
+      return 0;
+   }
+
    // complete it
    return 0;
 }
 
 // fseek(FILE*, long, int)
-int FILE::fseek(FILE* stream, long offset, int whence) {
+int fseek(FILE* stream, long offset, int whence) {
    // complete it
    return 0;
 }
 
 // fclose(FILE*)
-int FILE::fclose(FILE* stream) {
+int fclose(FILE* stream) {
    // complete it
    return 0;
 }
@@ -237,19 +247,19 @@ int fputs(const char* str, FILE* stream) {
 int feof(FILE* stream) { return stream->eof == true; }
 
 // fflush(FILE*)
-int FILE::fflush(FILE* stream) {
+int fflush(FILE* stream) {
    // complete it
    return 0;
 }
 
 // fpurge(FILE*)
-int FILE::fpurge(FILE* stream) {
+int fpurge(FILE* stream) {
    // complete it
    return 0;
 }
 
 // setvbuf (FILE*, char*, int, size_t)
-int FILE::setvbuf(FILE* stream, char* buf, int mode, size_t size) {
+int setvbuf(FILE* stream, char* buf, int mode, size_t size) {
    if (mode != _IONBF && mode != _IOLBF && mode != _IOFBF) {
       return -1;
    }
@@ -282,12 +292,12 @@ int FILE::setvbuf(FILE* stream, char* buf, int mode, size_t size) {
 }
 
 // setbuf (FILE*, char*)
-void FILE::setbuf(FILE* stream, char* buf) {
+void setbuf(FILE* stream, char* buf) {
    setvbuf(stream, buf, (buf != (char*)0) ? _IOFBF : _IONBF, BUFSIZ);
 }
 
 // printf(void*, ...)
-int FILE::printf(const void* format, ...) {
+int printf(const void* format, ...) {
    va_list list; // variable argument list type
    va_start(list, format);
 
@@ -322,7 +332,7 @@ int FILE::printf(const void* format, ...) {
 }
 
 // itoa(int)
-char* FILE::itoa(const int arg) {
+char* itoa(const int arg) {
    bzero(decimal, 100);
    int order = recursive_itoa(arg);
    char* new_decimal = new char[order + 1];
@@ -331,7 +341,7 @@ char* FILE::itoa(const int arg) {
 }
 
 // recursive_itoa(int)
-int FILE::recursive_itoa(int arg) {
+int recursive_itoa(int arg) {
    int div = arg / 10;
    int mod = arg % 10;
    int index = 0;
