@@ -130,7 +130,7 @@ void setbuf(FILE* stream, char* buf) {
    setvbuf(stream, buf, (buf != (char*)0) ? _IOFBF : _IONBF, BUFSIZ);
 }
 
-/** Wrapper around setvbuf to simplify buffer assignment with default size.
+/** Writes the remaining elements in the buffer and clears it
  @param stream pointer to the FILE stream to configure
  @return 0 if flush was successful, -1 otherwise  */
 int fflush(FILE* stream) {
@@ -158,7 +158,9 @@ int fflush(FILE* stream) {
    return 0;
 }
 
-// fpurge(FILE*)
+/** Clears the input buffer
+ @param stream pointer to the FILE stream to configure
+ @return 0 if purge was successful, -1 otherwise  */
 int fpurge(FILE* stream) {
    // Error checking
    if (!stream || stream->fd < 0) {
@@ -175,6 +177,11 @@ int fpurge(FILE* stream) {
    stream->lastop = '\0';
    return 0;
 }
+
+/** Checks if the end of file has been reached
+ @param stream pointer to the FILE stream to configure
+ @return 1 if eof , 0 if otherwise  */
+int feof(FILE* stream) { return stream->eof == true; }
 
 //-----------------------------------------Read Functions------------------------------------------
 /** Opens a file given file name
@@ -360,7 +367,7 @@ char* fgets(char* str, int size, FILE* stream) {
  @param size The size, in bytes, of each element to be read.
  @param nmemb The number of elements, each of size bytes, to be read.
  @param stream pointer to the FILE stream to configure
- @return The number of elements successfully read or zero if an error occurs */
+ @return The number of elements successfully read or 0 if an error occurs */
 size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
    // Error check
    if (!stream || stream->fd < 0 || size < 1 || nmemb < 1) {
@@ -413,23 +420,23 @@ size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
  @param stream pointer to the FILE stream to configure
  @param long the offset location from whence
  @param whence the position from where the offset is added
- @return Zero if successfully moved and non-zero if an error occurred */
+ @return 0 if successfully moved, -1 otherwise */
 int fseek(FILE* stream, long offset, int whence) {
    // Error check
    if (!stream || stream->fd < 0) {
-      return 1;
+      return -1;
    }
 
    // Flush any buffered data if necessary
    if (stream->lastop == 'w' || stream->lastop == 'a') {
       if (fflush(stream) != 0) {
-         return 1;
+         return -1;
       }
    }
 
    // Move the file pointer
    if (lseek(stream->fd, offset, whence) == -1) {
-      return 1;
+      return -1;
    }
 
    // Reset buffer
@@ -439,7 +446,9 @@ int fseek(FILE* stream, long offset, int whence) {
    return 0;
 }
 
-// fclose(FILE*)
+/** Close the file
+ @param stream pointer to the FILE stream to configure
+ @return 0 if successfully closed, -1 otherwise */
 int fclose(FILE* stream) {
    // Error check
    if (!stream || stream->fd < 0) {
@@ -477,6 +486,3 @@ int fputs(const char* str, FILE* stream) {
    return 0;
 }
 
-// --------------------------------------Auxillary Functions---------------------------------------
-// feof(FILE*)
-int feof(FILE* stream) { return stream->eof == true; }
