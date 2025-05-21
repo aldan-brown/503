@@ -129,7 +129,6 @@ void setbuf(FILE* stream, char* buf) {
    setvbuf(stream, buf, (buf != (char*)0) ? _IOFBF : _IONBF, BUFSIZ);
 }
 
-
 /** Opens a file given file name
     @param path A string representing the name of the file to be opened. This can include an
    absolute or relative path.
@@ -262,7 +261,6 @@ int fflush(FILE* stream) {
    return 0;
 }
 
-
 /** Reads data from the given stream into the array pointed to by ptr.
  @param ptr A pointer to a block of memory where the read data will be stored.
  @param size The size, in bytes, of each element to be read.
@@ -298,6 +296,7 @@ size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
             stream->eof = true;
             break;
          }
+         stream->eof = false;
          bytesRead += n;
       } else {
          // Buffered read
@@ -307,12 +306,14 @@ size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
                stream->eof = true;
                break;
             }
+            stream->eof = false;
             stream->actual_size = n;
             stream->pos = 0;
          }
          // Check whether the bytes available are the same as what was requested and performs a copy
          size_t available = stream->actual_size - stream->pos;
          size_t toCopy = (available < totalBytes - bytesRead) ? available : totalBytes - bytesRead;
+         memcpy(charArray + bytesRead, stream->buffer + stream->pos, toCopy);
          stream->pos += toCopy;
          bytesRead += toCopy;
       }
@@ -338,6 +339,13 @@ size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
       fpurge(stream);
    }
 
+   // If in append mode, ensure the pointer is at the end before writing
+   if (stream->flag & O_APPEND) {
+      // Move to the end of the file
+      if (lseek(stream->fd, 0, SEEK_END) == -1) {
+         return 0;
+      }
+   }
    // Set last operation
    stream->lastop = 'w';
 
@@ -356,7 +364,8 @@ size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
       } else {
          // Buffered write
          size_t spaceLeft = stream->size - stream->pos;
-         size_t toBuffer = (spaceLeft < totalBytes - bytesWritten) ? spaceLeft : totalBytes - bytesWritten;
+         size_t toBuffer =
+             (spaceLeft < totalBytes - bytesWritten) ? spaceLeft : totalBytes - bytesWritten;
          memcpy(stream->buffer + stream->pos, data + bytesWritten, toBuffer);
          stream->pos += toBuffer;
          bytesWritten += toBuffer;
@@ -400,6 +409,7 @@ int fgetc(FILE* stream) {
          stream->eof = true;
          return EOF;
       }
+      stream->eof = false;
       return static_cast<unsigned char>(c);
    }
 
@@ -411,11 +421,11 @@ int fgetc(FILE* stream) {
          stream->eof = true;
          return EOF;
       }
+      stream->eof = false;
       // Notes the new filled buffer size and sets position to start of the buffer
       stream->actual_size = bytes_read;
       stream->pos = 0;
    }
-
    // Read from buffer and return
    return static_cast<unsigned char>(stream->buffer[stream->pos++]);
 }
@@ -483,7 +493,6 @@ char* fgets(char* str, int size, FILE* stream) {
    // Set last operation to read
    stream->lastop = 'r';
 
-
    int currentPos = 0;
    int ch;
    // Loop through all characters using fgetc
@@ -492,9 +501,9 @@ char* fgets(char* str, int size, FILE* stream) {
       // EOF check
       if (ch == EOF) {
          if (currentPos == 0) {
-            return NULL; 
+            return NULL;
          }
-         break; 
+         break;
       }
 
       // Advance to next char
@@ -505,6 +514,7 @@ char* fgets(char* str, int size, FILE* stream) {
          break;
       }
    }
+   str[currentPos] = '\0';
    return str;
 }
 
@@ -554,15 +564,23 @@ int fseek(FILE* stream, long offset, int whence) {
       }
    }
 
-   // Move the file pointer
-   if (lseek(stream->fd, offset, whence) == -1) {
-      return -1;
+   // If a+, ensure the file pointer is at the end
+   if ((stream->flag & O_APPEND) && !(stream->flag & O_RDWR) && whence == SEEK_SET && offset == 0){
+      // Use lseek to move to the end of the file before writing
+      if (lseek(stream->fd, 0, SEEK_END) == -1) {
+         return -1;
+      }
+   } else {
+      // Other modes
+      if (lseek(stream->fd, offset, whence) == -1) {
+         return -1;
+      }
    }
 
    // Reset buffer
    stream->pos = 0;
    stream->actual_size = 0;
-
+   stream->eof = false;
    return 0;
 }
 
