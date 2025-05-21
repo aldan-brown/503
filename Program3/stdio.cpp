@@ -84,12 +84,12 @@ int printf(const void* format, ...) {
    return nWritten;
 }
 
-/** Sets the buffering mode and buffer for the specified output stream. Configures buffering 
+/** Sets the buffering mode and buffer for the specified output stream. Configures buffering
  *  behavior, optionally assigning a user-provided or system-allocated buffer.
  @param stream pointer to the FILE stream to configure
  @param buf optional buffer to use
- @param mode buffering mode to set 
- @param size size of the buffer 
+ @param mode buffering mode to set
+ @param size size of the buffer
  @return 0 on success, -1 otherwise */
 int setvbuf(FILE* stream, char* buf, int mode, size_t size) {
    if (mode != _IONBF && mode != _IOLBF && mode != _IOFBF) {
@@ -468,13 +468,9 @@ int fclose(FILE* stream) {
 }
 
 //----------------------------------------Write Functions---------------------------------------
-// fwrite(void*, size_t, size_t, FILE*)
-size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
-   // comlete it
-   return 0;
-}
-
-// fputc(int, FILE*)
+/** Write a character to a stream and advances the pointer
+ @param stream pointer to the FILE stream to configure
+ @return 0 if successfully closed, -1 otherwise */
 int fputc(int c, FILE* stream) {
    // complete it
    return 0;
@@ -485,4 +481,8 @@ int fputs(const char* str, FILE* stream) {
    // complete it
    return 0;
 }
-
+// fwrite(void*, size_t, size_t, FILE*)
+size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
+   // comlete it
+   return 0;
+}
