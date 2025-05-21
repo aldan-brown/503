@@ -8,8 +8,6 @@
 // Acknowledgements: Initial code provided by Prof. Robert Dimpsey
 // ------------------------------------------------------------------------------------------------
 
-#include "stdio.h"
-#include <algorithm>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -131,61 +129,7 @@ void setbuf(FILE* stream, char* buf) {
    setvbuf(stream, buf, (buf != (char*)0) ? _IOFBF : _IONBF, BUFSIZ);
 }
 
-/** Synchronizes the output stream with the buffer
- @param stream pointer to the FILE stream to configure
- @return 0 if flush was successful, -1 otherwise  */
-int fflush(FILE* stream) {
-   // Error checking
-   if (!stream || stream->fd < 0) {
-      return -1;
-   }
 
-   // Check for output stream
-   if (stream->lastop == 'w') {
-      if (stream->pos > 0 && stream->buffer) {
-         // Writer remainder of the buffer to the stream
-         ssize_t bytesWritten = write(stream->fd, stream->buffer, stream->pos);
-         if (bytesWritten == -1) {
-            return -1;
-         }
-
-         // Reset stream position and size
-         stream->pos = 0;
-         stream->actual_size = 0;
-      }
-   }
-
-   stream->lastop = '\0';
-   return 0;
-}
-
-/** Clears the input/output stream buffer
- @param stream pointer to the FILE stream to configure
- @return 0 if purge was successful, -1 otherwise  */
-int fpurge(FILE* stream) {
-   // Error checking
-   if (!stream || stream->fd < 0) {
-      return -1;
-   }
-
-   // Clear the buffer
-   if (stream->lastop == 'r' || stream->lastop == 'w') {
-      stream->pos = 0;
-      stream->actual_size = 0;
-      stream->eof = false;
-   }
-
-   // Reset operation
-   stream->lastop = '\0';
-   return 0;
-}
-
-/** Checks if the end of file has been reached
- @param stream pointer to the FILE stream to configure
- @return 1 if eof , 0 if otherwise  */
-int feof(FILE* stream) { return stream->eof == true; }
-
-//-----------------------------------------Read Functions------------------------------------------
 /** Opens a file given file name
     @param path A string representing the name of the file to be opened. This can include an
    absolute or relative path.
@@ -269,6 +213,165 @@ FILE* fopen(const char* path, const char* mode) {
    return stream;
 }
 
+/** Clears the input/output stream buffer
+ @param stream pointer to the FILE stream to configure
+ @return 0 if purge was successful, -1 otherwise  */
+int fpurge(FILE* stream) {
+   // Error checking
+   if (!stream || stream->fd < 0) {
+      return -1;
+   }
+
+   // Clear the buffer
+   if (stream->lastop == 'r' || stream->lastop == 'w') {
+      stream->pos = 0;
+      stream->actual_size = 0;
+      stream->eof = false;
+   }
+
+   // Reset operation
+   stream->lastop = '\0';
+   return 0;
+}
+
+/** Synchronizes the output stream with the buffer
+ @param stream pointer to the FILE stream to configure
+ @return 0 if flush was successful, -1 otherwise  */
+int fflush(FILE* stream) {
+   // Error checking
+   if (!stream || stream->fd < 0) {
+      return -1;
+   }
+
+   // Check for output stream
+   if (stream->lastop == 'w') {
+      if (stream->pos > 0 && stream->buffer) {
+         // Writer remainder of the buffer to the stream
+         ssize_t bytesWritten = write(stream->fd, stream->buffer, stream->pos);
+         if (bytesWritten == -1) {
+            return -1;
+         }
+
+         // Reset stream position and size
+         stream->pos = 0;
+         stream->actual_size = 0;
+      }
+   }
+
+   stream->lastop = '\0';
+   return 0;
+}
+
+
+/** Reads data from the given stream into the array pointed to by ptr.
+ @param ptr A pointer to a block of memory where the read data will be stored.
+ @param size The size, in bytes, of each element to be read.
+ @param nmemb The number of elements, each of size bytes, to be read.
+ @param stream pointer to the FILE stream to configure
+ @return The number of elements successfully read  */
+size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
+   // Error check
+   if (!stream || stream->fd < 0 || !ptr || size < 1 || nmemb < 1) {
+      return 0;
+   }
+
+   // Check if in write mode and resets buffer. Sets read mode
+   if (stream->lastop != 'r') {
+      fpurge(stream);
+      stream->pos = 0;
+      stream->actual_size = 0;
+   }
+   // Set last operation to read
+   stream->lastop = 'r';
+
+   char* charArray = (char*)ptr;
+   size_t totalBytes = size * nmemb;
+   size_t bytesRead = 0;
+
+   // Loop to read in specified amount of bytes or return after reaching eof
+   while (bytesRead < totalBytes) {
+      // Unbuffered read
+      if (stream->mode == _IONBF) {
+         ssize_t n = read(stream->fd, charArray + bytesRead, totalBytes - bytesRead);
+         // EOF check
+         if (n <= 0) {
+            stream->eof = true;
+            break;
+         }
+         bytesRead += n;
+      } else {
+         // Buffered read
+         if (stream->pos >= stream->actual_size) {
+            ssize_t n = read(stream->fd, stream->buffer, stream->size);
+            if (n <= 0) {
+               stream->eof = true;
+               break;
+            }
+            stream->actual_size = n;
+            stream->pos = 0;
+         }
+         // Check whether the bytes available are the same as what was requested and performs a copy
+         size_t available = stream->actual_size - stream->pos;
+         size_t toCopy = (available < totalBytes - bytesRead) ? available : totalBytes - bytesRead;
+         stream->pos += toCopy;
+         bytesRead += toCopy;
+      }
+   }
+   // Return number of full elements read
+   return (bytesRead / size);
+}
+
+/** Write characters from an array to the stream
+ @param ptr the pointer to an array
+ @param size the number of bytes in an element
+ @param nmemb the number of elements to be written
+ @param stream pointer to the FILE stream to configure
+ @return the number of elements successfully written*/
+size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
+   // Error check
+   if (!stream || stream->fd < 0 || !ptr || size < 1 || nmemb < 1) {
+      return 0;
+   }
+
+   // Check if read mode and purge
+   if (stream->lastop != 'w') {
+      fpurge(stream);
+   }
+
+   // Set last operation
+   stream->lastop = 'w';
+
+   const char* data = (const char*)ptr;
+   size_t totalBytes = size * nmemb;
+   size_t bytesWritten = 0;
+
+   // Loop until all elements written or eof
+   while (bytesWritten < totalBytes) {
+      // Unbuffered
+      if (stream->mode == _IONBF) {
+         ssize_t n = write(stream->fd, data + bytesWritten, totalBytes - bytesWritten);
+         if (n <= 0)
+            break;
+         bytesWritten += n;
+      } else {
+         // Buffered write
+         size_t spaceLeft = stream->size - stream->pos;
+         size_t toBuffer = (spaceLeft < totalBytes - bytesWritten) ? spaceLeft : totalBytes - bytesWritten;
+         memcpy(stream->buffer + stream->pos, data + bytesWritten, toBuffer);
+         stream->pos += toBuffer;
+         bytesWritten += toBuffer;
+
+         // Check full buffer
+         if (stream->pos >= stream->size) {
+            if (fflush(stream) != 0) {
+               break;
+            }
+         }
+      }
+   }
+   return bytesWritten / size;
+}
+
 /** Gets the next character from the specified file and advances the position indicator for the
   * stream.
  @param stream pointer to the FILE stream to configure
@@ -315,6 +418,44 @@ int fgetc(FILE* stream) {
 
    // Read from buffer and return
    return static_cast<unsigned char>(stream->buffer[stream->pos++]);
+}
+
+/** Write a character to a stream
+ @param c the integer representation of the character
+ @param stream pointer to the FILE stream to configure
+ @return character written as an unsigned char cast to an int, -1 otherwise */
+int fputc(int c, FILE* stream) {
+   // Error check
+   if (!stream || stream->fd < 0) {
+      return -1;
+   }
+
+   // Check if last mode was read and purge
+   if (stream->lastop != 'w') {
+      fpurge(stream);
+   }
+   // Set last operation
+   stream->lastop = 'w';
+
+   // Unbuffered write
+   if (stream->mode == _IONBF) {
+      char ch = (char)c;
+      if (write(stream->fd, &ch, 1) != 1) {
+         return -1;
+      }
+      return (unsigned char)c;
+   }
+
+   // Flush the buffer
+   if (!stream->buffer || stream->pos >= stream->size) {
+      if (fflush(stream) != 0) {
+         return -1;
+      }
+   }
+
+   // Write char to the buffer
+   stream->buffer[stream->pos++] = (char)c;
+   return (unsigned char)c;
 }
 
 /** Reads a line from the specified stream and stores it into the string pointed to by str. It
@@ -367,64 +508,33 @@ char* fgets(char* str, int size, FILE* stream) {
    return str;
 }
 
-/** Reads data from the given stream into the array pointed to by ptr.
- @param ptr A pointer to a block of memory where the read data will be stored.
- @param size The size, in bytes, of each element to be read.
- @param nmemb The number of elements, each of size bytes, to be read.
+/** Write a string of characters to a stream
+ @param str the pointer to a string of characters
  @param stream pointer to the FILE stream to configure
- @return The number of elements successfully read  */
-size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
+ @return the number of characters written, -1 otherwise */
+int fputs(const char* str, FILE* stream) {
    // Error check
-   if (!stream || stream->fd < 0 || !ptr || size < 1 || nmemb < 1) {
-      return 0;
+   if (!stream || stream->fd < 0 || !str) {
+      return -1;
    }
 
-   // Check if in write mode and resets buffer. Sets read mode
-   if (stream->lastop != 'r') {
-      fpurge(stream);
-      stream->pos = 0;
-      stream->actual_size = 0;
-   }
-   // Set last operation to read
-   stream->lastop = 'r';
-
-   char* charArray = (char*)ptr;
-   size_t totalBytes = size * nmemb;
-   size_t bytesRead = 0;
-
-   // Loop to read in specified amount of bytes or return after reaching eof
-   while (bytesRead < totalBytes) {
-      // Unbuffered read
-      if (stream->mode == _IONBF) {
-         ssize_t n = read(stream->fd, charArray + bytesRead, totalBytes - bytesRead);
-         // EOF check
-         if (n <= 0) {
-            stream->eof = true;
-            break;
-         }
-         bytesRead += n;
-      } else {
-         // Buffered read
-         if (stream->pos >= stream->actual_size) {
-            ssize_t n = read(stream->fd, stream->buffer, stream->size);
-            if (n <= 0) {
-               stream->eof = true;
-               break;
-            }
-            stream->actual_size = n;
-            stream->pos = 0;
-         }
-         // Check whether the bytes available are the same as what was requested and performs a copy
-         size_t available = stream->actual_size - stream->pos;
-         size_t toCopy = min(available, totalBytes - bytesRead);
-         memcpy(charArray + bytesRead, stream->buffer + stream->pos, toCopy);
-         stream->pos += toCopy;
-         bytesRead += toCopy;
+   int totalWritten = 0;
+   // Loop through each character using fputc
+   while (*str) {
+      if (fputc(*str, stream) == -1) {
+         return -1;
       }
+      // Advance to next character
+      str++;
+      totalWritten++;
    }
-   // Return number of full elements read
-   return (bytesRead / size);
+   return totalWritten;
 }
+
+/** Checks if the end of file has been reached
+ @param stream pointer to the FILE stream to configure
+ @return 1 if eof , 0 if otherwise  */
+int feof(FILE* stream) { return stream->eof == true; }
 
 /** Sets the file position to the given offset
  @param stream pointer to the FILE stream to configure
@@ -478,117 +588,4 @@ int fclose(FILE* stream) {
    delete stream;
 
    return 0;
-}
-
-//----------------------------------------Write Functions---------------------------------------
-/** Write a character to a stream 
- @param c the integer representation of the character
- @param stream pointer to the FILE stream to configure
- @return character written as an unsigned char cast to an int, -1 otherwise */
-int fputc(int c, FILE* stream) {
-   // Error check
-   if (!stream || stream->fd < 0) {
-      return -1;
-   }
-
-   // Check if last mode was read and purge
-   if (stream->lastop != 'w') {
-      fpurge(stream);
-   }
-   // Set last operation
-   stream->lastop = 'w';
-
-   // Unbuffered write
-   if (stream->mode == _IONBF) {
-      char ch = (char)c;
-      if (write(stream->fd, &ch, 1) != 1) {
-         return -1;
-      }
-      return (unsigned char)c;
-   }
-
-   // Flush the buffer
-   if (!stream->buffer || stream->pos >= stream->size) {
-      if (fflush(stream) != 0) {
-         return -1;
-      }
-   }
-
-   // Write char to the buffer
-   stream->buffer[stream->pos++] = (char)c;
-   return (unsigned char)c;
-}
-
-/** Write a string of characters to a stream
- @param str the pointer to a string of characters
- @param stream pointer to the FILE stream to configure
- @return the number of characters written, -1 otherwise */
-int fputs(const char* str, FILE* stream) {
-   // Error check
-   if (!stream || stream->fd < 0 || !str) {
-      return -1;
-   }
-
-   int totalWritten = 0;
-   // Loop through each character using fputc
-   while (*str) {
-      if (fputc(*str, stream) == -1) {
-         return -1;
-      }
-      // Advance to next character
-      str++;
-      totalWritten++;
-   }
-   return totalWritten;
-}
-
-/** Write characters from an array to the stream
- @param ptr the pointer to an array
- @param size the number of bytes in an element
- @param nmemb the number of elements to be written
- @param stream pointer to the FILE stream to configure
- @return the number of elements successfully written*/
-size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
-   // Error check
-   if (!stream || stream->fd < 0 || !ptr || size < 1 || nmemb < 1) {
-      return 0;
-   }
-
-   // Check if read mode and purge
-   if (stream->lastop != 'w') {
-      fpurge(stream);
-   }
-
-   // Set last operation
-   stream->lastop = 'w';
-
-   const char* data = (const char*)ptr;
-   size_t totalBytes = size * nmemb;
-   size_t bytesWritten = 0;
-
-   // Loop until all elements written or eof
-   while (bytesWritten < totalBytes) {
-      // Unbuffered
-      if (stream->mode == _IONBF) {
-         ssize_t n = write(stream->fd, data + bytesWritten, totalBytes - bytesWritten);
-         if (n <= 0)
-            break;
-         bytesWritten += n;
-      } else {
-         // Buffered write
-         size_t spaceLeft = stream->size - stream->pos;
-         size_t toBuffer = min(spaceLeft, totalBytes - bytesWritten);
-         memcpy(stream->buffer + stream->pos, data + bytesWritten, toBuffer);
-         stream->pos += toBuffer;
-         bytesWritten += toBuffer;
-
-         // Check full buffer
-         if (stream->pos >= stream->size) {
-            if (fflush(stream) != 0) {
-               break;
-            }
-         }
-      }
-   }
-   return bytesWritten / size;
 }
