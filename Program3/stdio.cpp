@@ -21,7 +21,9 @@ using namespace std;
 
 char decimal[100];
 
-// recursive_itoa(int)
+/** Recursive function for int to character (ASCII) function. Helper for *itoa
+ @param arg digit (integer)
+ @return Populates the decimal char array that represents a given int */
 int recursive_itoa(int arg) {
    int div = arg / 10;
    int mod = arg % 10;
@@ -33,7 +35,9 @@ int recursive_itoa(int arg) {
    return ++index;
 }
 
-// itoa(int)
+/** Integer to character array (c string)
+ @param arg integer to covert
+ @return string of characters */
 char* itoa(const int arg) {
    bzero(decimal, 100);
    int order = recursive_itoa(arg);
@@ -42,7 +46,10 @@ char* itoa(const int arg) {
    return new_decimal;
 }
 
-// printf(void*, ...)
+/** Implementation of the STL printf function. Takes a format string and a variable number of
+ *  arguments and prints the formatted output to the standard output stream.
+ @param format the string to print
+ @return number of bytes written */
 int printf(const void* format, ...) {
    va_list list; // variable argument list type
    va_start(list, format);
@@ -77,7 +84,13 @@ int printf(const void* format, ...) {
    return nWritten;
 }
 
-// setvbuf (FILE*, char*, int, size_t)
+/** Sets the buffering mode and buffer for the specified output stream. Configures buffering 
+ *  behavior, optionally assigning a user-provided or system-allocated buffer.
+ @param stream pointer to the FILE stream to configure
+ @param buf optional buffer to use
+ @param mode buffering mode to set 
+ @param size size of the buffer 
+ @return 0 on success, -1 otherwise */
 int setvbuf(FILE* stream, char* buf, int mode, size_t size) {
    if (mode != _IONBF && mode != _IOLBF && mode != _IOFBF) {
       return -1;
@@ -110,16 +123,20 @@ int setvbuf(FILE* stream, char* buf, int mode, size_t size) {
    return 0;
 }
 
-// setbuf (FILE*, char*)
+/** Wrapper around setvbuf to simplify buffer assignment with default size.
+ @param stream pointer to the FILE stream to configure
+ @param buf buffer to use; if NULL, disables buffering */
 void setbuf(FILE* stream, char* buf) {
    setvbuf(stream, buf, (buf != (char*)0) ? _IOFBF : _IONBF, BUFSIZ);
 }
 
-// fflush(FILE*)
+/** Wrapper around setvbuf to simplify buffer assignment with default size.
+ @param stream pointer to the FILE stream to configure
+ @return 0 if flush was successful, -1 otherwise  */
 int fflush(FILE* stream) {
    // Error checking
    if (!stream || stream->fd < 0) {
-      return EOF; // Return EOF to indicate an error
+      return -1;
    }
 
    // If the stream is in write mode, flush the output buffer
@@ -127,16 +144,17 @@ int fflush(FILE* stream) {
       // Write data from the buffer to the file
       ssize_t bytesWritten = write(stream->fd, stream->buffer, stream->pos);
 
-      // If writing fails, return EOF
+      // Writing error check
       if (bytesWritten == -1) {
-         return EOF;
+         return -1;
       }
 
       // Reset buffer position after flush
       stream->pos = 0;
       stream->actual_size = 0; // Reset buffer content as it is now written
    }
-
+   // Clear any read/write
+   stream->lastop = '\0';
    return 0;
 }
 
@@ -144,17 +162,17 @@ int fflush(FILE* stream) {
 int fpurge(FILE* stream) {
    // Error checking
    if (!stream || stream->fd < 0) {
-      return EOF; // Return EOF to indicate an error
+      return -1;
    }
 
-   // Clear the input buffer (if any)
+   // Clear the input buffer
    if (stream->lastop == 'r') {
-      // Simply reset buffer state, discarding the current contents
       stream->pos = 0;
       stream->actual_size = 0;
-      stream->eof = false; // Ensure the end-of-file state is reset
+      stream->eof = false;
    }
-
+   // Clear any read/write
+   stream->lastop = '\0';
    return 0;
 }
 
@@ -244,7 +262,7 @@ FILE* fopen(const char* path, const char* mode) {
 
 /** Gets the next character from the specified file and advances the position indicator for the
   * stream.
- @param stream input file
+ @param stream pointer to the FILE stream to configure
  @return Returns the character read from the stream as an unsigned char cast to an int. If the
          end-of-file is encountered or an error occurs, the function returns -1 */
 int fgetc(FILE* stream) {
@@ -282,12 +300,12 @@ int fgetc(FILE* stream) {
   * end-of-file is reached, whichever comes first.
  @param str char array where the string will be stored
  @param size number of characters to read, including termination ('\0')
- @param stream input file
+ @param stream pointer to the FILE stream to configure
  @return Pointer to the string of the line read in, or NULL if an error occurs */
 char* fgets(char* str, int size, FILE* stream) {
    // Error checking
    if (!stream || stream->fd < 0 || !str || size <= 1) {
-      if (str && size > 0){
+      if (str && size > 0) {
          str[0] = '\0';
       }
       return NULL;
@@ -311,7 +329,7 @@ char* fgets(char* str, int size, FILE* stream) {
          if (bytes_read <= 0) {
             stream->eof = true;
             // No characters read because eof reached
-            if(currentPos == 0){
+            if (currentPos == 0) {
                return NULL;
             }
             break;
@@ -320,12 +338,12 @@ char* fgets(char* str, int size, FILE* stream) {
          stream->actual_size = bytes_read;
          stream->pos = 0;
       }
-      // Pulls in next 
+      // Pulls in next
       char currentChar = stream->buffer[stream->pos++];
       str[currentPos] = currentChar;
 
       // Stop on new line char
-      if(currentChar == '\n'){
+      if (currentChar == '\n') {
          currentPos++;
          break;
       }
@@ -337,12 +355,11 @@ char* fgets(char* str, int size, FILE* stream) {
    return str;
 }
 
-
 /** Reads data from the given stream into the array pointed to by ptr.
  @param ptr A pointer to a block of memory where the read data will be stored.
  @param size The size, in bytes, of each element to be read.
  @param nmemb The number of elements, each of size bytes, to be read.
- @param stream input file
+ @param stream pointer to the FILE stream to configure
  @return The number of elements successfully read or zero if an error occurs */
 size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
    // Error check
@@ -353,7 +370,7 @@ size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
    // Check if in write mode and resets buffer. Sets read mode
    if (stream->lastop != 'r') {
       fpurge(stream);
-      stream->pos = 0; 
+      stream->pos = 0;
       stream->actual_size = 0;
    }
    stream->lastop = 'r';
@@ -362,7 +379,7 @@ size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
    size_t totalBytes = size * nmemb;
    size_t bytesRead = 0;
 
-   while(bytesRead < totalBytes ){
+   while (bytesRead < totalBytes) {
       if (stream->pos >= stream->actual_size) {
          ssize_t bytes_read = read(stream->fd, stream->buffer, stream->size);
          // EOF check
@@ -393,7 +410,7 @@ size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
 }
 
 /** Sets the file position to the given offset
- @param stream input file
+ @param stream pointer to the FILE stream to configure
  @param long the offset location from whence
  @param whence the position from where the offset is added
  @return Zero if successfully moved and non-zero if an error occurred */
@@ -406,39 +423,39 @@ int fseek(FILE* stream, long offset, int whence) {
    // Flush any buffered data if necessary
    if (stream->lastop == 'w' || stream->lastop == 'a') {
       if (fflush(stream) != 0) {
-         return 1; 
+         return 1;
       }
    }
 
    // Move the file pointer
    if (lseek(stream->fd, offset, whence) == -1) {
-      return 1; 
+      return 1;
    }
 
-   // Reset buffer 
+   // Reset buffer
    stream->pos = 0;
    stream->actual_size = 0;
 
-   return 0; 
+   return 0;
 }
 
 // fclose(FILE*)
 int fclose(FILE* stream) {
-   //Error check
+   // Error check
    if (!stream || stream->fd < 0) {
-      return -1; 
+      return -1;
    }
 
-   // Close the file descriptor
+   // Close the file
    if (close(stream->fd) == -1) {
-      return -1; 
+      return -1;
    }
 
-   // Free any dynamically allocated resources
-   delete[] stream->buffer; // Release buffer if it was dynamically allocated
-   delete stream;           // Free the FILE object
+   // Ensure no memory leaks
+   delete[] stream->buffer;
+   delete stream;
 
-   return 0; // Successfully closed the file
+   return 0;
 }
 
 //----------------------------------------Write Functions---------------------------------------
