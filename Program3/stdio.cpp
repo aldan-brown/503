@@ -9,6 +9,7 @@
 // ------------------------------------------------------------------------------------------------
 
 #include "stdio.h"
+#include <algorithm>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -130,7 +131,7 @@ void setbuf(FILE* stream, char* buf) {
    setvbuf(stream, buf, (buf != (char*)0) ? _IOFBF : _IONBF, BUFSIZ);
 }
 
-/** Writes the remaining elements in the buffer and clears it
+/** Synchronizes the output stream with the buffer
  @param stream pointer to the FILE stream to configure
  @return 0 if flush was successful, -1 otherwise  */
 int fflush(FILE* stream) {
@@ -139,26 +140,26 @@ int fflush(FILE* stream) {
       return -1;
    }
 
-   // If the stream is in write mode, flush the output buffer
-   if (stream->lastop == 'w' || stream->lastop == 'a') {
-      // Write data from the buffer to the file
-      ssize_t bytesWritten = write(stream->fd, stream->buffer, stream->pos);
+   // Check for output stream
+   if (stream->lastop == 'w') {
+      if (stream->pos > 0 && stream->buffer) {
+         // Writer remainder of the buffer to the stream
+         ssize_t bytesWritten = write(stream->fd, stream->buffer, stream->pos);
+         if (bytesWritten == -1) {
+            return -1;
+         }
 
-      // Writing error check
-      if (bytesWritten == -1) {
-         return -1;
+         // Reset stream position and size
+         stream->pos = 0;
+         stream->actual_size = 0;
       }
-
-      // Reset buffer position after flush
-      stream->pos = 0;
-      stream->actual_size = 0; // Reset buffer content as it is now written
    }
-   // Clear any read/write
+
    stream->lastop = '\0';
    return 0;
 }
 
-/** Clears the input buffer
+/** Clears the input/output stream buffer
  @param stream pointer to the FILE stream to configure
  @return 0 if purge was successful, -1 otherwise  */
 int fpurge(FILE* stream) {
@@ -167,13 +168,14 @@ int fpurge(FILE* stream) {
       return -1;
    }
 
-   // Clear the input buffer
-   if (stream->lastop == 'r') {
+   // Clear the buffer
+   if (stream->lastop == 'r' || stream->lastop == 'w') {
       stream->pos = 0;
       stream->actual_size = 0;
       stream->eof = false;
    }
-   // Clear any read/write
+
+   // Reset operation
    stream->lastop = '\0';
    return 0;
 }
@@ -284,21 +286,34 @@ int fgetc(FILE* stream) {
       stream->pos = 0;
       stream->actual_size = 0;
    }
+   // Set last operation to read
    stream->lastop = 'r';
 
-   // Checks if buffer is empty and needs to be refilled
+   // Check if unbuffered reading is required and read char
+   if (stream->mode == _IONBF) {
+      char c;
+      ssize_t bytes_read = read(stream->fd, &c, 1);
+      if (bytes_read <= 0) {
+         stream->eof = true;
+         return EOF;
+      }
+      return static_cast<unsigned char>(c);
+   }
+
+   // Buffered reading: checks if buffer is empty and needs to be refilled
    if (stream->pos >= stream->actual_size) {
       ssize_t bytes_read = read(stream->fd, stream->buffer, stream->size);
       // EOF check
       if (bytes_read <= 0) {
          stream->eof = true;
-         return -1;
+         return EOF;
       }
       // Notes the new filled buffer size and sets position to start of the buffer
       stream->actual_size = bytes_read;
       stream->pos = 0;
    }
 
+   // Read from buffer and return
    return static_cast<unsigned char>(stream->buffer[stream->pos++]);
 }
 
@@ -324,37 +339,49 @@ char* fgets(char* str, int size, FILE* stream) {
       stream->pos = 0;
       stream->actual_size = 0;
    }
+   // Set last operation to read
    stream->lastop = 'r';
 
    // Loop until characters read or new line reached
    int currentPos = 0;
    while (currentPos < size - 1) {
-      // Checks if buffer is empty and needs to be refilled
-      if (stream->pos >= stream->actual_size) {
-         ssize_t bytes_read = read(stream->fd, stream->buffer, stream->size);
+      char c;
+      // Check for unbuffered reading
+      if (stream->mode == _IONBF) {
+         ssize_t bytes_read = read(stream->fd, &c, 1);
          // EOF check
          if (bytes_read <= 0) {
             stream->eof = true;
-            // No characters read because eof reached
             if (currentPos == 0) {
                return NULL;
             }
             break;
          }
-         // Notes the new filled buffer size and sets position to start of the buffer
-         stream->actual_size = bytes_read;
-         stream->pos = 0;
+      } else {
+         // Buffered reading
+         if (stream->pos >= stream->actual_size) {
+            ssize_t bytes_read = read(stream->fd, stream->buffer, stream->size);
+            // EOF check
+            if (bytes_read <= 0) {
+               stream->eof = true;
+               if (currentPos == 0) {
+                  return NULL;
+               }
+               break;
+            }
+            stream->actual_size = bytes_read;
+            stream->pos = 0;
+         }
+         // Advance to next char
+         c = stream->buffer[stream->pos++];
       }
-      // Pulls in next
-      char currentChar = stream->buffer[stream->pos++];
-      str[currentPos] = currentChar;
+      // Increment loop
+      str[currentPos++] = c;
 
-      // Stop on new line char
-      if (currentChar == '\n') {
-         currentPos++;
+      // Check if new line and break
+      if (c == '\n') {
          break;
       }
-      currentPos++;
    }
 
    // Set the end of the string
@@ -380,40 +407,45 @@ size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
       stream->pos = 0;
       stream->actual_size = 0;
    }
+   // Set last operation to read
    stream->lastop = 'r';
 
    char* charArray = (char*)ptr;
    size_t totalBytes = size * nmemb;
    size_t bytesRead = 0;
 
+   // Loop to read in specified amount of bytes or return after reaching eof
    while (bytesRead < totalBytes) {
-      if (stream->pos >= stream->actual_size) {
-         ssize_t bytes_read = read(stream->fd, stream->buffer, stream->size);
+      // Unbuffered read
+      if (stream->mode == _IONBF) {
+         ssize_t n = read(stream->fd, charArray + bytesRead, totalBytes - bytesRead);
          // EOF check
-         if (bytes_read <= 0) {
+         if (n <= 0) {
             stream->eof = true;
-            // No characters read because eof reached
             break;
          }
-         // Notes the new filled buffer size and sets position to start of the buffer
-         stream->actual_size = bytes_read;
-         stream->pos = 0;
+         bytesRead += n;
+      } else {
+         // Buffered read
+         if (stream->pos >= stream->actual_size) {
+            ssize_t n = read(stream->fd, stream->buffer, stream->size);
+            if (n <= 0) {
+               stream->eof = true;
+               break;
+            }
+            stream->actual_size = n;
+            stream->pos = 0;
+         }
+         // Check whether the bytes available are the same as what was requested and performs a copy
+         size_t available = stream->actual_size - stream->pos;
+         size_t toCopy = min(available, totalBytes - bytesRead);
+         memcpy(charArray + bytesRead, stream->buffer + stream->pos, toCopy);
+         stream->pos += toCopy;
+         bytesRead += toCopy;
       }
-
-      // Check available bytes in the buffer against the needed amount
-      size_t bufferAvailable = stream->actual_size - stream->pos;
-      size_t remaining = totalBytes - bytesRead;
-      size_t bytesToCopy = (bufferAvailable < remaining) ? bufferAvailable : remaining;
-
-      // Copy from internal buffer to output pointer
-      memcpy(charArray + bytesRead, stream->buffer + stream->pos, bytesToCopy);
-
-      stream->pos += bytesToCopy;
-      bytesRead += bytesToCopy;
    }
-
    // Return number of full elements read
-   return bytesRead / size;
+   return (bytesRead / size);
 }
 
 /** Sets the file position to the given offset
@@ -428,7 +460,7 @@ int fseek(FILE* stream, long offset, int whence) {
    }
 
    // Flush any buffered data if necessary
-   if (stream->lastop == 'w' || stream->lastop == 'a') {
+   if (stream->lastop == 'w') {
       if (fflush(stream) != 0) {
          return -1;
       }
@@ -455,6 +487,9 @@ int fclose(FILE* stream) {
       return -1;
    }
 
+   // Flush the buffer
+   fflush(stream);
+
    // Close the file
    if (close(stream->fd) == -1) {
       return -1;
@@ -469,11 +504,42 @@ int fclose(FILE* stream) {
 
 //----------------------------------------Write Functions---------------------------------------
 /** Write a character to a stream and advances the pointer
+ @param c the integer representation of the character
  @param stream pointer to the FILE stream to configure
- @return 0 if successfully closed, -1 otherwise */
+ @return character written as an unsigned char cast to an int, -1 otherwise */
 int fputc(int c, FILE* stream) {
-   // complete it
-   return 0;
+   // Error check
+   if (!stream || stream->fd < 0) {
+      return -1;
+   }
+
+   // Check if last mode was read and purge
+   if (stream->lastop != 'w') {
+      fpurge(stream);
+   }
+   // Set to write
+   stream->lastop = 'w';
+
+   // Unbuffered write
+   if (stream->mode == _IONBF) {
+      char ch = (char)c;
+      if (write(stream->fd, &ch, 1) != 1) {
+         return -1;
+      }
+      return (unsigned char)c;
+   }
+
+   // Flush the buffer
+   if (!stream->buffer || stream->pos >= stream->size) {
+      if (fflush(stream) != 0) {
+         return -1;
+      }
+   }
+
+   // Write char to the buffer
+   stream->buffer[stream->pos++] = (char)c;
+   stream->actual_size++;
+   return (unsigned char)c;
 }
 
 // fputs(char*, FILE*)
