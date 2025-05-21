@@ -58,6 +58,7 @@ class FILE {
    bool bufown;     // true if allocated by stdio.h or false by a user
    char lastop;     // 'r' or 'w'
    bool eof;        // true if EOF is reached
+
 };
 #include "stdio.cpp"
 #endif

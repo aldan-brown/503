@@ -21,6 +21,143 @@ using namespace std;
 
 char decimal[100];
 
+// recursive_itoa(int)
+int recursive_itoa(int arg) {
+   int div = arg / 10;
+   int mod = arg % 10;
+   int index = 0;
+   if (div > 0) {
+      index = recursive_itoa(div);
+   }
+   decimal[index] = mod + '0';
+   return ++index;
+}
+
+// itoa(int)
+char* itoa(const int arg) {
+   bzero(decimal, 100);
+   int order = recursive_itoa(arg);
+   char* new_decimal = new char[order + 1];
+   bcopy(decimal, new_decimal, order + 1);
+   return new_decimal;
+}
+
+// printf(void*, ...)
+int printf(const void* format, ...) {
+   va_list list; // variable argument list type
+   va_start(list, format);
+
+   char* msg = (char*)format;
+   char buf[1024];
+   int nWritten = 0;
+
+   int i = 0, j = 0, k = 0;
+   while (msg[i] != '\0') {
+      if (msg[i] == '%' && msg[i + 1] == 'd') {
+         buf[j] = '\0';
+         nWritten += write(1, buf, j);
+         j = 0;
+         i += 2;
+
+         int int_val = va_arg(list, int);
+         char* dec = itoa(abs(int_val));
+         if (int_val < 0) {
+            nWritten += write(1, "-", 1);
+         }
+         nWritten += write(1, dec, strlen(dec));
+         delete dec;
+      } else {
+         buf[j++] = msg[i++];
+      }
+   }
+   if (j > 0) {
+      nWritten += write(1, buf, j);
+   }
+   va_end(list);
+   return nWritten;
+}
+
+// setvbuf (FILE*, char*, int, size_t)
+int setvbuf(FILE* stream, char* buf, int mode, size_t size) {
+   if (mode != _IONBF && mode != _IOLBF && mode != _IOFBF) {
+      return -1;
+   }
+   stream->mode = mode;
+   stream->pos = 0;
+   if (stream->buffer != (char*)0 && stream->bufown == true) {
+      delete stream->buffer;
+   }
+
+   switch (mode) {
+   case _IONBF:
+      stream->buffer = (char*)0;
+      stream->size = 0;
+      stream->bufown = false;
+      break;
+   case _IOLBF:
+   case _IOFBF:
+      if (buf != (char*)0) {
+         stream->buffer = buf;
+         stream->size = size;
+         stream->bufown = false;
+      } else {
+         stream->buffer = new char[BUFSIZ];
+         stream->size = BUFSIZ;
+         stream->bufown = true;
+      }
+      break;
+   }
+   return 0;
+}
+
+// setbuf (FILE*, char*)
+void setbuf(FILE* stream, char* buf) {
+   setvbuf(stream, buf, (buf != (char*)0) ? _IOFBF : _IONBF, BUFSIZ);
+}
+
+// fflush(FILE*)
+int fflush(FILE* stream) {
+   // Error checking
+   if (!stream || stream->fd < 0) {
+      return EOF; // Return EOF to indicate an error
+   }
+
+   // If the stream is in write mode, flush the output buffer
+   if (stream->lastop == 'w' || stream->lastop == 'a') {
+      // Write data from the buffer to the file
+      ssize_t bytesWritten = write(stream->fd, stream->buffer, stream->pos);
+
+      // If writing fails, return EOF
+      if (bytesWritten == -1) {
+         return EOF;
+      }
+
+      // Reset buffer position after flush
+      stream->pos = 0;
+      stream->actual_size = 0; // Reset buffer content as it is now written
+   }
+
+   return 0;
+}
+
+// fpurge(FILE*)
+int fpurge(FILE* stream) {
+   // Error checking
+   if (!stream || stream->fd < 0) {
+      return EOF; // Return EOF to indicate an error
+   }
+
+   // Clear the input buffer (if any)
+   if (stream->lastop == 'r') {
+      // Simply reset buffer state, discarding the current contents
+      stream->pos = 0;
+      stream->actual_size = 0;
+      stream->eof = false; // Ensure the end-of-file state is reset
+   }
+
+   return 0;
+}
+
 //-----------------------------------------Read Functions------------------------------------------
 /** Opens a file given file name
     @param path A string representing the name of the file to be opened. This can include an
@@ -118,6 +255,7 @@ int fgetc(FILE* stream) {
 
    // Check if in write mode and resets buffer. Sets read mode
    if (stream->lastop != 'r') {
+      fpurge(stream);
       stream->pos = 0;
       stream->actual_size = 0;
    }
@@ -157,6 +295,7 @@ char* fgets(char* str, int size, FILE* stream) {
 
    // Check if in write mode and resets buffer. Sets read mode
    if (stream->lastop != 'r') {
+      fpurge(stream);
       stream->pos = 0;
       stream->actual_size = 0;
    }
@@ -184,9 +323,13 @@ char* fgets(char* str, int size, FILE* stream) {
       // Pulls in next 
       char currentChar = stream->buffer[stream->pos++];
       str[currentPos] = currentChar;
+
+      // Stop on new line char
       if(currentChar == '\n'){
+         currentPos++;
          break;
       }
+      currentPos++;
    }
 
    // Set the end of the string
@@ -207,25 +350,95 @@ size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream) {
       return 0;
    }
 
-   
+   // Check if in write mode and resets buffer. Sets read mode
+   if (stream->lastop != 'r') {
+      fpurge(stream);
+      stream->pos = 0; 
+      stream->actual_size = 0;
+   }
+   stream->lastop = 'r';
 
+   char* charArray = (char*)ptr;
+   size_t totalBytes = size * nmemb;
+   size_t bytesRead = 0;
 
+   while(bytesRead < totalBytes ){
+      if (stream->pos >= stream->actual_size) {
+         ssize_t bytes_read = read(stream->fd, stream->buffer, stream->size);
+         // EOF check
+         if (bytes_read <= 0) {
+            stream->eof = true;
+            // No characters read because eof reached
+            break;
+         }
+         // Notes the new filled buffer size and sets position to start of the buffer
+         stream->actual_size = bytes_read;
+         stream->pos = 0;
+      }
 
+      // Check available bytes in the buffer against the needed amount
+      size_t bufferAvailable = stream->actual_size - stream->pos;
+      size_t remaining = totalBytes - bytesRead;
+      size_t bytesToCopy = (bufferAvailable < remaining) ? bufferAvailable : remaining;
 
-   // complete it
-   return 0;
+      // Copy from internal buffer to output pointer
+      memcpy(charArray + bytesRead, stream->buffer + stream->pos, bytesToCopy);
+
+      stream->pos += bytesToCopy;
+      bytesRead += bytesToCopy;
+   }
+
+   // Return number of full elements read
+   return bytesRead / size;
 }
 
-// fseek(FILE*, long, int)
+/** Sets the file position to the given offset
+ @param stream input file
+ @param long the offset location from whence
+ @param whence the position from where the offset is added
+ @return Zero if successfully moved and non-zero if an error occurred */
 int fseek(FILE* stream, long offset, int whence) {
-   // complete it
-   return 0;
+   // Error check
+   if (!stream || stream->fd < 0) {
+      return 1;
+   }
+
+   // Flush any buffered data if necessary
+   if (stream->lastop == 'w' || stream->lastop == 'a') {
+      if (fflush(stream) != 0) {
+         return 1; 
+      }
+   }
+
+   // Move the file pointer
+   if (lseek(stream->fd, offset, whence) == -1) {
+      return 1; 
+   }
+
+   // Reset buffer 
+   stream->pos = 0;
+   stream->actual_size = 0;
+
+   return 0; 
 }
 
 // fclose(FILE*)
 int fclose(FILE* stream) {
-   // complete it
-   return 0;
+   //Error check
+   if (!stream || stream->fd < 0) {
+      return -1; 
+   }
+
+   // Close the file descriptor
+   if (close(stream->fd) == -1) {
+      return -1; 
+   }
+
+   // Free any dynamically allocated resources
+   delete[] stream->buffer; // Release buffer if it was dynamically allocated
+   delete stream;           // Free the FILE object
+
+   return 0; // Successfully closed the file
 }
 
 //----------------------------------------Write Functions---------------------------------------
@@ -250,109 +463,3 @@ int fputs(const char* str, FILE* stream) {
 // --------------------------------------Auxillary Functions---------------------------------------
 // feof(FILE*)
 int feof(FILE* stream) { return stream->eof == true; }
-
-// fflush(FILE*)
-int fflush(FILE* stream) {
-   // complete it
-   return 0;
-}
-
-// fpurge(FILE*)
-int fpurge(FILE* stream) {
-   // complete it
-   return 0;
-}
-
-// setvbuf (FILE*, char*, int, size_t)
-int setvbuf(FILE* stream, char* buf, int mode, size_t size) {
-   if (mode != _IONBF && mode != _IOLBF && mode != _IOFBF) {
-      return -1;
-   }
-   stream->mode = mode;
-   stream->pos = 0;
-   if (stream->buffer != (char*)0 && stream->bufown == true) {
-      delete stream->buffer;
-   }
-
-   switch (mode) {
-   case _IONBF:
-      stream->buffer = (char*)0;
-      stream->size = 0;
-      stream->bufown = false;
-      break;
-   case _IOLBF:
-   case _IOFBF:
-      if (buf != (char*)0) {
-         stream->buffer = buf;
-         stream->size = size;
-         stream->bufown = false;
-      } else {
-         stream->buffer = new char[BUFSIZ];
-         stream->size = BUFSIZ;
-         stream->bufown = true;
-      }
-      break;
-   }
-   return 0;
-}
-
-// setbuf (FILE*, char*)
-void setbuf(FILE* stream, char* buf) {
-   setvbuf(stream, buf, (buf != (char*)0) ? _IOFBF : _IONBF, BUFSIZ);
-}
-
-// printf(void*, ...)
-int printf(const void* format, ...) {
-   va_list list; // variable argument list type
-   va_start(list, format);
-
-   char* msg = (char*)format;
-   char buf[1024];
-   int nWritten = 0;
-
-   int i = 0, j = 0, k = 0;
-   while (msg[i] != '\0') {
-      if (msg[i] == '%' && msg[i + 1] == 'd') {
-         buf[j] = '\0';
-         nWritten += write(1, buf, j);
-         j = 0;
-         i += 2;
-
-         int int_val = va_arg(list, int);
-         char* dec = itoa(abs(int_val));
-         if (int_val < 0) {
-            nWritten += write(1, "-", 1);
-         }
-         nWritten += write(1, dec, strlen(dec));
-         delete dec;
-      } else {
-         buf[j++] = msg[i++];
-      }
-   }
-   if (j > 0) {
-      nWritten += write(1, buf, j);
-   }
-   va_end(list);
-   return nWritten;
-}
-
-// itoa(int)
-char* itoa(const int arg) {
-   bzero(decimal, 100);
-   int order = recursive_itoa(arg);
-   char* new_decimal = new char[order + 1];
-   bcopy(decimal, new_decimal, order + 1);
-   return new_decimal;
-}
-
-// recursive_itoa(int)
-int recursive_itoa(int arg) {
-   int div = arg / 10;
-   int mod = arg % 10;
-   int index = 0;
-   if (div > 0) {
-      index = recursive_itoa(div);
-   }
-   decimal[index] = mod + '0';
-   return ++index;
-}
