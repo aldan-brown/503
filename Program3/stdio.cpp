@@ -364,6 +364,7 @@ char* fgets(char* str, int size, FILE* stream) {
          break;
       }
    }
+   return str;
 }
 
 /** Reads data from the given stream into the array pointed to by ptr.
@@ -515,7 +516,6 @@ int fputc(int c, FILE* stream) {
 
    // Write char to the buffer
    stream->buffer[stream->pos++] = (char)c;
-   stream->actual_size++;
    return (unsigned char)c;
 }
 
@@ -583,7 +583,7 @@ size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
          bytesWritten += toBuffer;
 
          // Check full buffer
-         if (stream->pos == stream->size) {
+         if (stream->pos >= stream->size) {
             if (fflush(stream) != 0) {
                break;
             }
