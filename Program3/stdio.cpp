@@ -247,7 +247,7 @@ int fflush(FILE* stream) {
       if (stream->pos > 0 && stream->buffer) {
          // Writer remainder of the buffer to the stream
          ssize_t bytesWritten = write(stream->fd, stream->buffer, stream->pos);
-         if (bytesWritten == -1) {
+         if (bytesWritten <= 0) {
             return -1;
          }
 
@@ -375,6 +375,7 @@ size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
             if (fflush(stream) != 0) {
                break;
             }
+            stream->lastop = 'w';
          }
       }
    }
@@ -564,17 +565,9 @@ int fseek(FILE* stream, long offset, int whence) {
       }
    }
 
-   // If a+, ensure the file pointer is at the end
-   if ((stream->flag & O_APPEND) && !(stream->flag & O_RDWR) && whence == SEEK_SET && offset == 0){
-      // Use lseek to move to the end of the file before writing
-      if (lseek(stream->fd, 0, SEEK_END) == -1) {
-         return -1;
-      }
-   } else {
-      // Other modes
-      if (lseek(stream->fd, offset, whence) == -1) {
-         return -1;
-      }
+   // Seek
+   if (lseek(stream->fd, offset, whence) == -1) {
+      return -1;
    }
 
    // Reset buffer
