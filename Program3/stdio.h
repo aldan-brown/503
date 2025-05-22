@@ -1,24 +1,3 @@
-// --------------------------------------------stdio.h---------------------------------------------
-// Aldan Brown CSS 503
-// Date Created: 5/20/2025
-// Date Modified: 5/20/2025
-// ------------------------------------------------------------------------------------------------
-// Description: This program is a self-implementation of core input and output functions in the
-// C/C++ standard I/O library : <stdio.h>.
-// ------------------------------------------------------------------------------------------------
-// Notes:
-// 1) Many files were already provided: stdio.h, stdio.cpp, eval.cpp, driver.cpp, compile.h,
-// eval_tests.sh, and a number of test .txt files.
-// 2) The stdio.cpp file have been reformatted for clarity including a reorder of
-// functions to better match project spec (program_3.docx) as well as comment formatting.
-// ------------------------------------------------------------------------------------------------
-// Assumptions:
-// 1) Although function declarations in stdio.h is more proper, doing so breaks both driver.cpp
-// and eval.cpp. This change will be ignored.
-// ------------------------------------------------------------------------------------------------
-// Acknowledgements: Initial code provided by Prof. Robert Dimpsey
-// ------------------------------------------------------------------------------------------------
-
 #ifndef _MY_STDIO_H_
 #define _MY_STDIO_H_
 

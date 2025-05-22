@@ -1,9 +1,19 @@
 // -------------------------------------------stdio.cpp--------------------------------------------
 // Aldan Brown CSS 503
 // Date Created: 5/20/2025
-// Date Modified: 5/20/2025
+// Date Modified: 5/22/2025
 // ------------------------------------------------------------------------------------------------
-// Description: Implementation of "stdio.h"
+// Description: This program is a self-implementation of core input and output functions in the
+// C/C++ standard I/O library : <stdio.h>.
+// ------------------------------------------------------------------------------------------------
+// Notes:
+// 1) Many files were already provided: stdio.h, eval.cpp, driver.cpp, compile.h, eval_tests.sh, 
+// and a number of test .txt files. The authored content by Aldan Brown is limited to stdio.cpp.
+// ------------------------------------------------------------------------------------------------
+// Assumptions:
+// 1) Although function declarations in stdio.h is more proper, doing so breaks both driver.cpp
+// and eval.cpp. This change will be ignored. Additionally the #include statement will continue to
+// held in the header, even though it isn't best practice.
 // ------------------------------------------------------------------------------------------------
 // Acknowledgements: Initial code provided by Prof. Robert Dimpsey
 // ------------------------------------------------------------------------------------------------
