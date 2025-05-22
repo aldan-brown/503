@@ -11,9 +11,9 @@
 // and a number of test .txt files. The authored content by Aldan Brown is limited to stdio.cpp.
 // ------------------------------------------------------------------------------------------------
 // Assumptions:
-// 1) Although function declarations in stdio.h is more proper, doing so breaks both driver.cpp
-// and eval.cpp. This change will be ignored. Additionally the #include statement will continue to
-// held in the header, even though it isn't best practice.
+// 1) I will be following the program specification and will not modify inherited designs from any
+// of the reveived program files. I will only modify stdio.cpp and only the functions with 
+// "complete it." Please see Documentation file for thoughts on how to improve program structure.
 // ------------------------------------------------------------------------------------------------
 // Acknowledgements: Initial code provided by Prof. Robert Dimpsey
 // ------------------------------------------------------------------------------------------------
