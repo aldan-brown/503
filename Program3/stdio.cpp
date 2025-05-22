@@ -385,6 +385,7 @@ size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
             if (fflush(stream) != 0) {
                break;
             }
+            // Set last operation to write after flush
             stream->lastop = 'w';
          }
       }
