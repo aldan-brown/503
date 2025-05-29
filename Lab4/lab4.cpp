@@ -1,9 +1,6 @@
 #include "udp_multicast.h"
-
 #include <iostream>
-
 using namespace std;
-
 #define SIZE 1024
 
 int main(int argc, char* argv[]) {
@@ -28,14 +25,26 @@ int main(int argc, char* argv[]) {
    if (message != NULL) {
       // client
       // implement yourself
-
+      if (udp.getClientSocket() == NULL_SD) {
+         cerr << "Failed to create client socket." << endl;
+         return -1;
+      }
+      bool success = udp.multicast(message);
+      if (!success) {
+         cerr << "Failed to send multicast message." << endl;
+         return -1;
+      }
    } else {
       udp.getServerSocket();
       while (true) {
          // server
          // implement yourself
+         int size = 1024;
+         char* buffer = new char[size];
+         if (udp.recv(buffer, size)) {
+            cout << buffer << endl;
+         } 
       }
    }
-
    return 0;
 }
