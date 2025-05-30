@@ -100,10 +100,13 @@ int main(int argc, char* argv[]) {
    }
    int32_t numRep = ntohl(repetitions);
 
+   /*
+    * Read in buffers
+    */ 
+   int bytesRead;
    for (int r = 0; r < numRep; r++) {
-      int bytesRead = read(newSD, databuf, BUFFSIZE);
+      bytesRead = read(newSD, databuf, BUFFSIZE);
    }
-   
    // Error check
    if (bytesRead < 0) {
       cerr << "Did not receive buffers" << endl;
@@ -113,7 +116,7 @@ int main(int argc, char* argv[]) {
       cerr << "Partial read of repetitions" << endl;
    } else {
       cout << "Bytes Read: " << bytesRead << endl;
-      cout << databuf[0] << endl;
+      cout << bytesRead << endl;
    }
 
    /*
