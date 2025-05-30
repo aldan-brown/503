@@ -60,6 +60,7 @@ int main(int argc, char* argv[]) {
 
    if (sizeof(argv[1]) != 6) {
       cerr << "Usage: " << argv[1] << " ivalid port" << endl;
+      return -1;
    }
    port = argv[1];
 
@@ -67,18 +68,21 @@ int main(int argc, char* argv[]) {
       repetition = atoi(argv[2]);
    } catch (overflow_error& e) {
       cerr << "Usage: " << argv[2] << " too many repetitions" << endl;
+      return -1;
    }
 
    try {
       nbufs = atoi(argv[3]);
    } catch (overflow_error& e) {
       cerr << "Usage: " << argv[3] << " too many buffers" << endl;
+      return -1;
    }
 
    try {
       bufsize = atoi(argv[4]);
    } catch (overflow_error& e) {
       cerr << "Usage: " << argv[4] << " buffer size too large" << endl;
+      return -1;
    }
 
    try {
@@ -89,6 +93,14 @@ int main(int argc, char* argv[]) {
       }
    } catch (overflow_error& e) {
       cerr << "Usage: " << argv[5] << " invalid type" << endl;
+      return -1;
+   }
+
+   // Validate inputs
+   if (nbufs * bufsize != 1500) {
+      cerr << "nbufs: " << nbufs << ", bufsize: " << bufsize << "when multiplied must equal 1500"
+           << endl;
+      return -1;
    }
 
    /*
@@ -144,12 +156,14 @@ int main(int argc, char* argv[]) {
    // Send repetitions
    cout << "Sending repetitions" << endl;
    int32_t repetitions_net = htonl(repetition);
-   size_t numSent = send(clientSD, &repetitions_net, sizeof(repetitions_net), 0);
+   ssize_t numSent = send(clientSD, &repetitions_net, sizeof(repetitions_net), 0);
    // Error check
    if (numSent < 0) {
       cerr << "Repetition did not send" << endl;
    } else if (numSent == 0) {
       cerr << "Connection to server ended abruptly" << endl;
+   } else if (numSent != sizeof(repetitions_net)) {
+      cerr << "Repetition partialy sent" << endl;
    } else {
       cout << "Repetitions sent successfully" << endl;
    }
@@ -162,26 +176,28 @@ int main(int argc, char* argv[]) {
    }
 
    // Send data by type
-   int bytesWritten;
+   ssize_t bytesWritten;
+   struct iovec vector[nbufs];
    auto start = chrono::high_resolution_clock::now(); // start clock
-   if (type == 1) {
-      for (int j = 0; j < nbufs; j++) {
-         bytesWritten = write(clientSD, databuf[j], bufsize);
+   for (int r = 0; r < repetition; r++){
+      if (type == 1) {
+         for (int j = 0; j < nbufs; j++) {
+            bytesWritten = write(clientSD, databuf[j], bufsize);
+         }
+      } else if (type == 2) {
+         for (int j = 0; j < nbufs; j++) {
+            vector[j].iov_base = databuf[j];
+            vector[j].iov_len = bufsize;
+         }
+         bytesWritten = writev(clientSD, vector, nbufs);
+      } else {
+         bytesWritten = write(clientSD, databuf, nbufs * bufsize);
       }
-   } else if (type == 2) {
-      struct iovec vector[nbufs];
-      for (int j = 0; j < nbufs; j++) {
-         vector[j].iov_base = databuf[j];
-         vector[j].iov_len = bufsize;
-      }
-      bytesWritten = writev(clientSD, vector, nbufs);
-   } else {
-      bytesWritten = write(clientSD, databuf, nbufs * bufsize);
    }
    auto end = chrono::high_resolution_clock::now(); // End test
    // Calculate duration
    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
-   // Calculation Gbps
+   // Calculate Gbps
    double totalBits = repetition * nbufs * bufsize * 8.0;
    double durationSec = duration / 1e6; // convert usec to sec
    double throughputGbps = (totalBits / durationSec) / 1e9;
@@ -204,7 +220,7 @@ int main(int argc, char* argv[]) {
    if (bytesReceived < 0) {
       cerr << "Did not receive runs" << endl;
    } else if (bytesReceived == 0) {
-      cerr << "Connection to client abrubtly terminated" << endl;
+      cerr << "Connection to server abrubtly terminated" << endl;
    } else if (bytesReceived != sizeof(runs_net)) {
       cerr << "Partial read of runs" << endl;
    }

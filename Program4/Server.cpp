@@ -14,7 +14,7 @@
 // 1)
 // ------------------------------------------------------------------------------------------------
 // Assumptions:
-// 1) 
+// 1)
 // ------------------------------------------------------------------------------------------------
 // Acknowledgements: Initial code provided by Prof. Robert Dimpsey as "server.cpp"
 // ------------------------------------------------------------------------------------------------
@@ -37,15 +37,25 @@ const int BUFFSIZE = 1500;
 const int NUM_CONNECTIONS = 5;
 
 int main(int argc, char* argv[]) {
-   int serverPort;
-   char* serverName;
    char databuf[BUFFSIZE];
    bzero(databuf, BUFFSIZE);
 
    /*
     * Build address
     */
-   int port = 12345;
+
+   // Error check
+   if (argc < 2) {
+      cerr << "Usage: port" << endl;
+      return -1;
+   }
+
+   if (sizeof(argv[1]) != 6) {
+      cerr << "Invalid port[5]" << endl;
+      return -1;
+   }
+   int port = atoi(argv[1]);
+
    sockaddr_in acceptSocketAddress;
    bzero((char*)&acceptSocketAddress, sizeof(acceptSocketAddress));
    acceptSocketAddress.sin_family = AF_INET;
@@ -77,9 +87,34 @@ int main(int argc, char* argv[]) {
    /*
     *  read from the socket
     */
-   int bytesRead = read(newSD, databuf, BUFFSIZE);
-   cout << "Bytes Read: " << bytesRead << endl;
-   cout << databuf[0] << endl;
+   // Get number of repetitions from client
+   int32_t repetitions;
+   ssize_t bytesReceived = recv(serverSD, &repetitions, sizeof(repetitions), MSG_WAITALL);
+   // Error check
+   if (bytesReceived < 0) {
+      cerr << "Did not receive repetitions" << endl;
+   } else if (bytesReceived == 0) {
+      cerr << "Connection to client abrubtly terminated" << endl;
+   } else if (bytesReceived != sizeof(repetitions)) {
+      cerr << "Partial read of repetitions" << endl;
+   }
+   int32_t numRep = ntohl(repetitions);
+
+   for (int r = 0; r < numRep; r++) {
+      int bytesRead = read(newSD, databuf, BUFFSIZE);
+   }
+   
+   // Error check
+   if (bytesRead < 0) {
+      cerr << "Did not receive buffers" << endl;
+   } else if (bytesRead == 0) {
+      cerr << "Connection to client abrubtly terminated" << endl;
+   } else if (bytesRead != 1500 * numRep) {
+      cerr << "Partial read of repetitions" << endl;
+   } else {
+      cout << "Bytes Read: " << bytesRead << endl;
+      cout << databuf[0] << endl;
+   }
 
    /*
     *  write to socket
