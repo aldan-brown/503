@@ -1,8 +1,24 @@
-/*
- * Sockets-server -
- * Simple server program to demonstrate sockets usage
- * CSS 503
- */
+// -------------------------------------------Server.cpp-------------------------------------------
+// Aldan Brown CSS 503
+// Date Created: 5/30/2025
+// Date Modified: 5/30/2025
+// ------------------------------------------------------------------------------------------------
+// Description: A client-server model where a client process establishes a connection to a server,
+// sends data or requests, and closes the connection.  The server will accept the connection and
+// create a thread to service the request and then wait for another connection on the main thread.
+// Servicing the request consists of (1) reading the number of iterations the client will perform,
+// (2) reading the data sent by the client, and (3) sending the number of reads which the server
+// performed.
+// ------------------------------------------------------------------------------------------------
+// Notes:
+// 1)
+// ------------------------------------------------------------------------------------------------
+// Assumptions:
+// 1) 
+// ------------------------------------------------------------------------------------------------
+// Acknowledgements: Initial code provided by Prof. Robert Dimpsey as "server.cpp"
+// ------------------------------------------------------------------------------------------------
+
 #include <arpa/inet.h>
 #include <iostream>
 #include <netdb.h>
