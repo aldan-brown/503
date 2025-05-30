@@ -14,12 +14,14 @@
 // 1)
 // ------------------------------------------------------------------------------------------------
 // Assumptions:
-// 1) 
+// 1)
 // ------------------------------------------------------------------------------------------------
 // Acknowledgements: Initial code provided by Prof. Robert Dimpsey as "client.cpp"
 // ------------------------------------------------------------------------------------------------
 
 #include <arpa/inet.h>
+#include <chrono>
+#include <climits>
 #include <iostream>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -36,33 +38,70 @@ using namespace std;
 const int BUFFSIZE = 1500;
 
 int main(int argc, char* argv[]) {
+   // Argument inputs
    char* serverName;
-   char serverPort[6] = "12345";
-   char* databuf;
+   char* port;
+   int repetition, nbufs, bufsize, type;
+
+   // Socket variables
    struct addrinfo hints;
    struct addrinfo *result, *rp;
    int clientSD = -1;
 
    /*
-    *  Argument validation
+    * Argument validation
     */
-   if (argc != 2) {
-      cerr << "Usage: " << argv[0] << "serverName" << endl;
+   if (argc != 7) {
+      cerr << "Usage: serverName, port, repetition, nbufs, bufsize, type " << endl;
       return -1;
+   }
+
+   serverName = argv[0];
+
+   if (sizeof(argv[1]) != 6) {
+      cerr << "Usage: " << argv[1] << " ivalid port" << endl;
+   }
+   port = argv[1];
+
+   try {
+      repetition = atoi(argv[2]);
+   } catch (overflow_error& e) {
+      cerr << "Usage: " << argv[2] << " too many repetitions" << endl;
+   }
+
+   try {
+      nbufs = atoi(argv[3]);
+   } catch (overflow_error& e) {
+      cerr << "Usage: " << argv[3] << " too many buffers" << endl;
+   }
+
+   try {
+      bufsize = atoi(argv[4]);
+   } catch (overflow_error& e) {
+      cerr << "Usage: " << argv[4] << " buffer size too large" << endl;
+   }
+
+   try {
+      type = atoi(argv[5]);
+      if (type < 1 || type > 3) {
+         cerr << "Invalid type. Defaulting to Type 1";
+         type = 1;
+      }
+   } catch (overflow_error& e) {
+      cerr << "Usage: " << argv[5] << " invalid type" << endl;
    }
 
    /*
     * Use getaddrinfo() to get addrinfo structure corresponding to serverName / Port
     * This addrinfo structure has internet address which can be used to create a socket too
     */
-   serverName = argv[1];
 
    memset(&hints, 0, sizeof(struct addrinfo));
    hints.ai_family = AF_UNSPEC;     /* Allow IPv4 or IPv6*/
    hints.ai_socktype = SOCK_STREAM; /* TCP */
    hints.ai_flags = 0;              /* Optional Options*/
    hints.ai_protocol = 0;           /* Allow any protocol*/
-   int rc = getaddrinfo(serverName, serverPort, &hints, &result);
+   int rc = getaddrinfo(serverName, port, &hints, &result);
    if (rc != 0) {
       cerr << "ERROR: " << gai_strerror(rc) << endl;
       exit(EXIT_FAILURE);
@@ -101,17 +140,79 @@ int main(int argc, char* argv[]) {
    /*
     *  Write and read data over network
     */
-   databuf = new char[BUFFSIZE];
-   for (int i = 0; i < BUFFSIZE; i++) {
-      databuf[i] = 'z';
+
+   // Send repetitions
+   cout << "Sending repetitions" << endl;
+   int32_t repetitions_net = htonl(repetition);
+   size_t numSent = send(clientSD, &repetitions_net, sizeof(repetitions_net), 0);
+   // Error check
+   if (numSent < 0) {
+      cerr << "Repetition did not send" << endl;
+   } else if (numSent == 0) {
+      cerr << "Connection to server ended abruptly" << endl;
+   } else {
+      cout << "Repetitions sent successfully" << endl;
    }
 
-   int bytesWritten = write(clientSD, databuf, BUFFSIZE);
-   cout << "Bytes Written: " << bytesWritten << endl;
+   // Create data
+   char databuf[nbufs][bufsize];
+   for (int i = 0; i < nbufs; i++) {
+      for (int j = 0; j < bufsize; j++)
+         databuf[i][j] = 'z';
+   }
 
-   int bytesRead = read(clientSD, databuf, BUFFSIZE);
-   cout << "Bytes Read: " << bytesRead << endl;
-   cout << databuf[13] << endl;
+   // Send data by type
+   int bytesWritten;
+   auto start = chrono::high_resolution_clock::now(); // start clock
+   if (type == 1) {
+      for (int j = 0; j < nbufs; j++) {
+         bytesWritten = write(clientSD, databuf[j], bufsize);
+      }
+   } else if (type == 2) {
+      struct iovec vector[nbufs];
+      for (int j = 0; j < nbufs; j++) {
+         vector[j].iov_base = databuf[j];
+         vector[j].iov_len = bufsize;
+      }
+      bytesWritten = writev(clientSD, vector, nbufs);
+   } else {
+      bytesWritten = write(clientSD, databuf, nbufs * bufsize);
+   }
+   auto end = chrono::high_resolution_clock::now(); // End test
+   // Calculate duration
+   auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
+   // Calculation Gbps
+   double totalBits = repetition * nbufs * bufsize * 8.0;
+   double durationSec = duration / 1e6; // convert usec to sec
+   double throughputGbps = (totalBits / durationSec) / 1e9;
+
+   // Write error checking
+   if (bytesWritten < 0) {
+      cerr << "Bytes not written" << endl;
+   } else if (bytesWritten == 0) {
+      cerr << "Connection to server abrubtly terminated" << endl;
+   } else if (bytesWritten != 1500) {
+      cerr << "Bytes not fully written" << endl;
+   } else {
+      cout << "Write operation successful" << endl;
+   }
+
+   // Get number of runs from server
+   int32_t runs_net;
+   ssize_t bytesReceived = recv(clientSD, &runs_net, sizeof(runs_net), MSG_WAITALL);
+   // Error check
+   if (bytesReceived < 0) {
+      cerr << "Did not receive runs" << endl;
+   } else if (bytesReceived == 0) {
+      cerr << "Connection to client abrubtly terminated" << endl;
+   } else if (bytesReceived != sizeof(runs_net)) {
+      cerr << "Partial read of runs" << endl;
+   }
+   int32_t numRuns = ntohl(runs_net);
+
+   // Successful operation output
+   cout << "Test(" << type << ") : time = " << duration << " usec, #reads = " << numRuns
+        << ", throughput = " << throughputGbps << " Gbps " << endl;
 
    close(clientSD);
    return 0;
