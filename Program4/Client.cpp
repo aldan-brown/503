@@ -1,7 +1,7 @@
 // -------------------------------------------Client.cpp-------------------------------------------
 // Aldan Brown CSS 503
 // Date Created: 5/30/2025
-// Date Modified: 5/30/2025
+// Date Modified: 6/2/2025
 // ------------------------------------------------------------------------------------------------
 // Description: A client-server model where a client process establishes a connection to a server,
 // sends data or requests, and closes the connection.  The server will accept the connection and
@@ -56,50 +56,22 @@ int main(int argc, char* argv[]) {
       return -1;
    }
 
-   serverName = argv[0];
-
-   if (sizeof(argv[1]) != 6) {
-      cerr << "Usage: " << argv[1] << " ivalid port" << endl;
-      return -1;
-   }
-   port = argv[1];
-
-   try {
-      repetition = atoi(argv[2]);
-   } catch (overflow_error& e) {
-      cerr << "Usage: " << argv[2] << " too many repetitions" << endl;
-      return -1;
-   }
-
-   try {
-      nbufs = atoi(argv[3]);
-   } catch (overflow_error& e) {
-      cerr << "Usage: " << argv[3] << " too many buffers" << endl;
-      return -1;
-   }
-
-   try {
-      bufsize = atoi(argv[4]);
-   } catch (overflow_error& e) {
-      cerr << "Usage: " << argv[4] << " buffer size too large" << endl;
-      return -1;
-   }
-
-   try {
-      type = atoi(argv[5]);
-      if (type < 1 || type > 3) {
-         cerr << "Invalid type. Defaulting to Type 1";
-         type = 1;
-      }
-   } catch (overflow_error& e) {
-      cerr << "Usage: " << argv[5] << " invalid type" << endl;
-      return -1;
-   }
+   // Parse arguments
+   char* serverName = argv[1];
+   char* port = argv[2];
+   int repetition = atoi(argv[3]);
+   int nbufs = atoi(argv[4]);
+   int bufsize = atoi(argv[5]);
+   int type = atoi(argv[6]);
 
    // Validate inputs
-   if (nbufs * bufsize != 1500) {
-      cerr << "nbufs: " << nbufs << ", bufsize: " << bufsize << "when multiplied must equal 1500"
-           << endl;
+   if (nbufs * bufsize != BUFFSIZE) {
+      cerr << "Usage: nbufs * bufsize must equal " << BUFFSIZE << endl;
+      return -1;
+   }
+
+   if (type < 1 || type > 3) {
+      cerr << "Usage: Type must be 1, 2, or 3." << endl;
       return -1;
    }
 
@@ -107,12 +79,12 @@ int main(int argc, char* argv[]) {
     * Use getaddrinfo() to get addrinfo structure corresponding to serverName / Port
     * This addrinfo structure has internet address which can be used to create a socket too
     */
-
    memset(&hints, 0, sizeof(struct addrinfo));
    hints.ai_family = AF_UNSPEC;     /* Allow IPv4 or IPv6*/
    hints.ai_socktype = SOCK_STREAM; /* TCP */
    hints.ai_flags = 0;              /* Optional Options*/
    hints.ai_protocol = 0;           /* Allow any protocol*/
+
    int rc = getaddrinfo(serverName, port, &hints, &result);
    if (rc != 0) {
       cerr << "ERROR: " << gai_strerror(rc) << endl;
@@ -135,8 +107,7 @@ int main(int argc, char* argv[]) {
          cerr << "Connection Failed" << endl;
          close(clientSD);
          return -1;
-      } else // success
-      {
+      } else { // success
          break;
       }
    }
@@ -149,23 +120,24 @@ int main(int argc, char* argv[]) {
    }
    freeaddrinfo(result);
 
+   if (clientSD == -1) {
+      cerr << "Could not connect to server" << endl;
+      return -1;
+   }
+   cout << "Connected to server on socket: " << clientSD << endl;
+
    /*
     *  Write and read data over network
     */
-
    // Send repetitions
    cout << "Sending repetitions" << endl;
    int32_t repetitions_net = htonl(repetition);
    ssize_t numSent = send(clientSD, &repetitions_net, sizeof(repetitions_net), 0);
    // Error check
-   if (numSent < 0) {
-      cerr << "Repetition did not send" << endl;
-   } else if (numSent == 0) {
-      cerr << "Connection to server ended abruptly" << endl;
-   } else if (numSent != sizeof(repetitions_net)) {
-      cerr << "Repetition partialy sent" << endl;
-   } else {
-      cout << "Repetitions sent successfully" << endl;
+   if (numSent != sizeof(repetitions_net)) {
+      cerr << "Failed to send repetitions to server." << endl;
+      close(clientSD);
+      return -1;
    }
 
    // Create data
@@ -179,10 +151,29 @@ int main(int argc, char* argv[]) {
    ssize_t bytesWritten;
    struct iovec vector[nbufs];
    auto start = chrono::high_resolution_clock::now(); // start clock
-   for (int r = 0; r < repetition; r++){
+   /*
+    * Repetition loop for reads
+    * Type 1 (multiple writes): invokes the write() system call for each data buffer, thus
+    * resulting in calling as many write()s as the number of data buffers, (i.e., nbufs).
+    * Type 2 (writev): allocates an array of iovec data structures, each having its *iov_base field
+    * point to a different data buffer as well as storing the buffer size in its iov_len field; and
+    * thereafter calls writev() to send all data buffers at once
+    * Type 3 (single write):  allocates an nbufs-sized array of data buffers, and thereafter calls
+    * write() to send this array, (i.e., all data buffers) at once
+    */
+   for (int r = 0; r < repetition; r++) {
       if (type == 1) {
          for (int j = 0; j < nbufs; j++) {
-            bytesWritten = write(clientSD, databuf[j], bufsize);
+            int totalSent = 0;
+            while (totalSent < bufsize) {
+               bytesWritten = write(clientSD, databuf[j] + totalSent, bufsize - totalSent);
+               if (bytesWritten < 0) {
+                  cerr << "Error writing to socket (type 1)" << endl;
+                  close(clientSD);
+                  return -1;
+               }
+               totalSent += bytesWritten;
+            }
          }
       } else if (type == 2) {
          for (int j = 0; j < nbufs; j++) {
@@ -190,41 +181,45 @@ int main(int argc, char* argv[]) {
             vector[j].iov_len = bufsize;
          }
          bytesWritten = writev(clientSD, vector, nbufs);
+
+         if (bytesWritten < nbufs * bufsize) {
+            cerr << "Error writing to socket (type 2)" << endl;
+            close(clientSD);
+            return -1;
+         }
       } else {
-         bytesWritten = write(clientSD, databuf, nbufs * bufsize);
+         int totalSent = 0;
+         while (totalSent < BUFFSIZE) {
+            bytesWritten = write(clientSD, databuf, BUFFSIZE - totalSent);
+            if (bytesWritten < 0) {
+               cerr << "Error writing to socket (type 3)" << endl;
+               close(clientSD);
+               return -1;
+            }
+            totalSent += bytesWritten;
+         }
       }
    }
-   auto end = chrono::high_resolution_clock::now(); // End test
-   // Calculate duration
+   // End test & calculate duration
+   auto end = chrono::high_resolution_clock::now();
    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
-   // Calculate Gbps
-   double totalBits = repetition * nbufs * bufsize * 8.0;
-   double durationSec = duration / 1e6; // convert usec to sec
-   double throughputGbps = (totalBits / durationSec) / 1e9;
-
-   // Write error checking
-   if (bytesWritten < 0) {
-      cerr << "Bytes not written" << endl;
-   } else if (bytesWritten == 0) {
-      cerr << "Connection to server abrubtly terminated" << endl;
-   } else if (bytesWritten != 1500) {
-      cerr << "Bytes not fully written" << endl;
-   } else {
-      cout << "Write operation successful" << endl;
-   }
 
    // Get number of runs from server
    int32_t runs_net;
    ssize_t bytesReceived = recv(clientSD, &runs_net, sizeof(runs_net), MSG_WAITALL);
+
    // Error check
-   if (bytesReceived < 0) {
-      cerr << "Did not receive runs" << endl;
-   } else if (bytesReceived == 0) {
-      cerr << "Connection to server abrubtly terminated" << endl;
-   } else if (bytesReceived != sizeof(runs_net)) {
-      cerr << "Partial read of runs" << endl;
+   if (bytesReceived != sizeof(runs_net)) {
+      cerr << "Failed to receive read count from server." << endl;
+      close(clientSD);
+      return -1;
    }
    int32_t numRuns = ntohl(runs_net);
+
+   // Calculate Gbps
+   double totalBits = repetition * nbufs * bufsize * 8.0;
+   double durationSec = duration / 1e6; // convert usec to sec
+   double throughputGbps = (totalBits / durationSec) / 1e9;
 
    // Successful operation output
    cout << "Test(" << type << ") : time = " << duration << " usec, #reads = " << numRuns

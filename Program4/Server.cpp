@@ -1,7 +1,7 @@
 // -------------------------------------------Server.cpp-------------------------------------------
 // Aldan Brown CSS 503
 // Date Created: 5/30/2025
-// Date Modified: 5/30/2025
+// Date Modified: 6/2/2025
 // ------------------------------------------------------------------------------------------------
 // Description: A client-server model where a client process establishes a connection to a server,
 // sends data or requests, and closes the connection.  The server will accept the connection and
@@ -36,6 +36,55 @@ using namespace std;
 const int BUFFSIZE = 1500;
 const int NUM_CONNECTIONS = 5;
 
+/**
+ * Creates a new thread for each client request
+   @param arg pointer to the client server descriptor */
+void* handleClient(void* arg) {
+   // Convert pointer to int and free memory
+   int clientSD = *((int*)arg);
+   delete (int*)arg; 
+
+   char* databuf = new char[BUFFSIZE];
+   bzero(databuf, BUFFSIZE);
+
+   // Get number of repetitions
+   int32_t repetitions;
+   ssize_t bytesReceived = recv(clientSD, &repetitions, sizeof(repetitions), MSG_WAITALL);
+   if (bytesReceived <= 0 || bytesReceived != sizeof(repetitions)) {
+      cerr << "Failed to receive repetitions" << endl;
+      close(clientSD);
+      delete[] databuf;
+      pthread_exit(nullptr);
+   }
+   int32_t numRep = ntohl(repetitions);
+
+   // Read in buffers
+   int totalReads = 0;
+   for (int r = 0; r < numRep; r++) {
+      int bytesRead = 0;
+      int totalRead = 0;
+      while (totalRead < BUFFSIZE) {
+         bytesRead = read(clientSD, databuf + totalRead, BUFFSIZE - totalRead);
+         if (bytesRead <= 0) {
+            cerr << "Connection error or client closed connection during read" << endl;
+            close(clientSD);
+            delete[] databuf;
+            pthread_exit(nullptr);
+         }
+         totalRead += bytesRead;
+         totalReads++;
+      }
+   }
+
+   // Send number of reads back to client
+   int32_t netReads = htonl(totalReads);
+   send(clientSD, &netReads, sizeof(netReads), 0);
+
+   close(clientSD);
+   delete[] databuf;
+   pthread_exit(nullptr);
+}
+
 int main(int argc, char* argv[]) {
    char databuf[BUFFSIZE];
    bzero(databuf, BUFFSIZE);
@@ -50,10 +99,6 @@ int main(int argc, char* argv[]) {
       return -1;
    }
 
-   if (sizeof(argv[1]) != 6) {
-      cerr << "Invalid port[5]" << endl;
-      return -1;
-   }
    int port = atoi(argv[1]);
 
    sockaddr_in acceptSocketAddress;
@@ -79,54 +124,25 @@ int main(int argc, char* argv[]) {
     *  listen and accept
     */
    listen(serverSD, NUM_CONNECTIONS); // setting number of pending connections
-   sockaddr_in newSockAddr;
-   socklen_t newSockAddrSize = sizeof(newSockAddr);
-   int newSD = accept(serverSD, (sockaddr*)&newSockAddr, &newSockAddrSize);
-   cout << "Accepted Socket #: " << newSD << endl;
 
-   /*
-    *  read from the socket
-    */
-   // Get number of repetitions from client
-   int32_t repetitions;
-   ssize_t bytesReceived = recv(serverSD, &repetitions, sizeof(repetitions), MSG_WAITALL);
-   // Error check
-   if (bytesReceived < 0) {
-      cerr << "Did not receive repetitions" << endl;
-   } else if (bytesReceived == 0) {
-      cerr << "Connection to client abrubtly terminated" << endl;
-   } else if (bytesReceived != sizeof(repetitions)) {
-      cerr << "Partial read of repetitions" << endl;
-   }
-   int32_t numRep = ntohl(repetitions);
+   while (true) { //Loop to accept new connections
+      sockaddr_in newSockAddr;
+      socklen_t newSockAddrSize = sizeof(newSockAddr);
+      int* newSD = new int;
+      *newSD = accept(serverSD, (sockaddr*)&newSockAddr, &newSockAddrSize);
+      if (*newSD < 0) {
+         cerr << "Accept failed" << endl;
+         delete newSD;
+         continue;
+      }
 
-   /*
-    * Read in buffers
-    */ 
-   int bytesRead;
-   for (int r = 0; r < numRep; r++) {
-      bytesRead = read(newSD, databuf, BUFFSIZE);
-   }
-   // Error check
-   if (bytesRead < 0) {
-      cerr << "Did not receive buffers" << endl;
-   } else if (bytesRead == 0) {
-      cerr << "Connection to client abrubtly terminated" << endl;
-   } else if (bytesRead != 1500 * numRep) {
-      cerr << "Partial read of repetitions" << endl;
-   } else {
-      cout << "Bytes Read: " << bytesRead << endl;
-      cout << bytesRead << endl;
+      cout << "Accepted connection on socket: " << *newSD << endl;
+
+      pthread_t threadID;
+      pthread_create(&threadID, nullptr, handleClient, newSD);
+      pthread_detach(threadID); 
    }
 
-   /*
-    *  write to socket
-    */
-   databuf[13] = 'R';
-   int bytesWritten = write(newSD, databuf, BUFFSIZE);
-   cout << "Bytes Written: " << bytesWritten << endl;
-
-   close(newSD);
    close(serverSD);
 
    return 0;
