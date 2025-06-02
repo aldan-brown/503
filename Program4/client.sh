@@ -16,15 +16,14 @@ test_types="1 2 3"
 > output.txt
 
 # Run combinations
-for combo in $buf_combinations
+echo "$buf_combinations" | while read nbufs bufsize
 do
-    set -- $combo
-    nbufs=$1
-    bufsize=$2
-
     for type in $test_types
     do
-        echo "Running: ./client csslab8.uwb.edu 04171 20000 $nbufs $bufsize $type" >> output.txt
-        ./client csslab8.uwb.edu 04171 20000 $nbufs $bufsize $type | grep "Test(" >> output.txt
+      for run in 1 2 3 4 5
+      do
+         echo "Running: csslab8.uwb.edu 04171 20000 $nbufs $bufsize $type" >> output.txt
+         ./client csslab8.uwb.edu 04171 20000 $nbufs $bufsize $type | grep "Test(" >> output.txt
+         done
     done
 done

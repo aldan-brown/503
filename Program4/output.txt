@@ -1,0 +1,120 @@
+Running: csslab8.uwb.edu 04171 20000 15 100 1
+Test(1) : time = 456911 usec, #reads = 22400, throughput = 0.525266 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 1
+Test(1) : time = 458427 usec, #reads = 21564, throughput = 0.523529 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 1
+Test(1) : time = 450524 usec, #reads = 22240, throughput = 0.532713 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 1
+Test(1) : time = 464954 usec, #reads = 22649, throughput = 0.51618 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 1
+Test(1) : time = 464611 usec, #reads = 22602, throughput = 0.516561 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 2
+Test(2) : time = 58528 usec, #reads = 20073, throughput = 4.1006 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 2
+Test(2) : time = 49041 usec, #reads = 20033, throughput = 4.89386 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 2
+Test(2) : time = 54335 usec, #reads = 20081, throughput = 4.41704 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 2
+Test(2) : time = 58636 usec, #reads = 20080, throughput = 4.09305 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 2
+Test(2) : time = 45812 usec, #reads = 20027, throughput = 5.2388 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 3
+Test(3) : time = 50568 usec, #reads = 20061, throughput = 4.74608 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 3
+Test(3) : time = 51280 usec, #reads = 20064, throughput = 4.68019 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 3
+Test(3) : time = 44520 usec, #reads = 20065, throughput = 5.39084 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 3
+Test(3) : time = 54676 usec, #reads = 20067, throughput = 4.38949 Gbps 
+Running: csslab8.uwb.edu 04171 20000 15 100 3
+Test(3) : time = 52134 usec, #reads = 20048, throughput = 4.60352 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 1
+Test(1) : time = 871314 usec, #reads = 23757, throughput = 0.275446 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 1
+Test(1) : time = 881311 usec, #reads = 24283, throughput = 0.272322 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 1
+Test(1) : time = 843106 usec, #reads = 23724, throughput = 0.284662 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 1
+Test(1) : time = 862949 usec, #reads = 24297, throughput = 0.278116 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 1
+Test(1) : time = 868302 usec, #reads = 25328, throughput = 0.276402 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 2
+Test(2) : time = 56186 usec, #reads = 20129, throughput = 4.27153 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 2
+Test(2) : time = 58426 usec, #reads = 20091, throughput = 4.10776 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 2
+Test(2) : time = 72165 usec, #reads = 20089, throughput = 3.32571 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 2
+Test(2) : time = 66471 usec, #reads = 20109, throughput = 3.6106 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 2
+Test(2) : time = 64600 usec, #reads = 20070, throughput = 3.71517 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 3
+Test(3) : time = 55116 usec, #reads = 20048, throughput = 4.35445 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 3
+Test(3) : time = 52485 usec, #reads = 20045, throughput = 4.57274 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 3
+Test(3) : time = 47314 usec, #reads = 20085, throughput = 5.07249 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 3
+Test(3) : time = 46285 usec, #reads = 20080, throughput = 5.18527 Gbps 
+Running: csslab8.uwb.edu 04171 20000 30 50 3
+Test(3) : time = 55407 usec, #reads = 20071, throughput = 4.33158 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 1
+Test(1) : time = 1702679 usec, #reads = 30123, throughput = 0.140954 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 1
+Test(1) : time = 1686283 usec, #reads = 28379, throughput = 0.142325 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 1
+Test(1) : time = 1724540 usec, #reads = 30196, throughput = 0.139168 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 1
+Test(1) : time = 1700090 usec, #reads = 27891, throughput = 0.141169 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 1
+Test(1) : time = 1671042 usec, #reads = 27540, throughput = 0.143623 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 2
+Test(2) : time = 71735 usec, #reads = 20240, throughput = 3.34565 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 2
+Test(2) : time = 70555 usec, #reads = 20151, throughput = 3.4016 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 2
+Test(2) : time = 76529 usec, #reads = 20107, throughput = 3.13607 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 2
+Test(2) : time = 77258 usec, #reads = 20160, throughput = 3.10647 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 2
+Test(2) : time = 73921 usec, #reads = 20145, throughput = 3.24671 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 3
+Test(3) : time = 48002 usec, #reads = 20067, throughput = 4.99979 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 3
+Test(3) : time = 49005 usec, #reads = 20052, throughput = 4.89746 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 3
+Test(3) : time = 50555 usec, #reads = 20052, throughput = 4.7473 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 3
+Test(3) : time = 46429 usec, #reads = 20064, throughput = 5.16918 Gbps 
+Running: csslab8.uwb.edu 04171 20000 60 25 3
+Test(3) : time = 45185 usec, #reads = 20048, throughput = 5.3115 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 1
+Test(1) : time = 2801478 usec, #reads = 32427, throughput = 0.0856691 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 1
+Test(1) : time = 2767463 usec, #reads = 31871, throughput = 0.086722 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 1
+Test(1) : time = 2747690 usec, #reads = 32045, throughput = 0.0873461 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 1
+Test(1) : time = 2809569 usec, #reads = 33066, throughput = 0.0854224 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 1
+Test(1) : time = 2799977 usec, #reads = 33777, throughput = 0.085715 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 2
+Test(2) : time = 94417 usec, #reads = 20289, throughput = 2.54192 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 2
+Test(2) : time = 97361 usec, #reads = 20368, throughput = 2.46505 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 2
+Test(2) : time = 91442 usec, #reads = 20197, throughput = 2.62461 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 2
+Test(2) : time = 99777 usec, #reads = 20385, throughput = 2.40536 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 2
+Test(2) : time = 100039 usec, #reads = 20326, throughput = 2.39906 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 3
+Test(3) : time = 42106 usec, #reads = 20054, throughput = 5.6999 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 3
+Test(3) : time = 57673 usec, #reads = 20055, throughput = 4.16139 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 3
+Test(3) : time = 57222 usec, #reads = 20070, throughput = 4.19419 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 3
+Test(3) : time = 41907 usec, #reads = 20049, throughput = 5.72697 Gbps 
+Running: csslab8.uwb.edu 04171 20000 100 15 3
+Test(3) : time = 61778 usec, #reads = 20064, throughput = 3.88488 Gbps 
