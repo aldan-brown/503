@@ -21,7 +21,6 @@
 
 #include <arpa/inet.h>
 #include <chrono>
-#include <climits>
 #include <iostream>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -38,19 +37,12 @@ using namespace std;
 const int BUFFSIZE = 1500;
 
 int main(int argc, char* argv[]) {
-   // Argument inputs
-   char* serverName;
-   char* port;
-   int repetition, nbufs, bufsize, type;
-
    // Socket variables
    struct addrinfo hints;
    struct addrinfo *result, *rp;
    int clientSD = -1;
 
-   /*
-    * Argument validation
-    */
+   // Check input number
    if (argc != 7) {
       cerr << "Usage: serverName, port, repetition, nbufs, bufsize, type " << endl;
       return -1;
@@ -69,7 +61,6 @@ int main(int argc, char* argv[]) {
       cerr << "Usage: nbufs * bufsize must equal " << BUFFSIZE << endl;
       return -1;
    }
-
    if (type < 1 || type > 3) {
       cerr << "Usage: Type must be 1, 2, or 3." << endl;
       return -1;
@@ -91,27 +82,20 @@ int main(int argc, char* argv[]) {
       exit(EXIT_FAILURE);
    }
 
-   /*
-    * Iterate through addresses and connect
-    */
+   // Iterate through addresses and connect
+   clientSD = -1;
    for (rp = result; rp != NULL; rp = rp->ai_next) {
-      clientSD = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-      if (clientSD == -1) {
+      int sd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+      if (sd == -1) {
          continue;
       }
-      /*
-       * A socket has been successfully created
-       */
-      rc = connect(clientSD, rp->ai_addr, rp->ai_addrlen);
-      if (rc < 0) {
-         cerr << "Connection Failed" << endl;
-         close(clientSD);
-         return -1;
-      } else { // success
+      if (connect(sd, rp->ai_addr, rp->ai_addrlen) == 0) {
+         clientSD = sd; // successful
          break;
       }
+      close(sd); // failed connect, cleanup
    }
-
+   // Error checks and outputs for successful connections
    if (rp == NULL) {
       cerr << "No valid address" << endl;
       exit(EXIT_FAILURE);
@@ -119,16 +103,13 @@ int main(int argc, char* argv[]) {
       cout << "Client Socket: " << clientSD << endl;
    }
    freeaddrinfo(result);
-
    if (clientSD == -1) {
       cerr << "Could not connect to server" << endl;
       return -1;
    }
    cout << "Connected to server on socket: " << clientSD << endl;
 
-   /*
-    *  Write and read data over network
-    */
+   // Write and read over network
    // Send repetitions
    cout << "Sending repetitions" << endl;
    int32_t repetitions_net = htonl(repetition);
@@ -140,7 +121,7 @@ int main(int argc, char* argv[]) {
       return -1;
    }
 
-   // Create data
+   // Create data buffers
    char databuf[nbufs][bufsize];
    for (int i = 0; i < nbufs; i++) {
       for (int j = 0; j < bufsize; j++)
@@ -167,6 +148,7 @@ int main(int argc, char* argv[]) {
             int totalSent = 0;
             while (totalSent < bufsize) {
                bytesWritten = write(clientSD, databuf[j] + totalSent, bufsize - totalSent);
+               // Error check
                if (bytesWritten < 0) {
                   cerr << "Error writing to socket (type 1)" << endl;
                   close(clientSD);
@@ -181,7 +163,7 @@ int main(int argc, char* argv[]) {
             vector[j].iov_len = bufsize;
          }
          bytesWritten = writev(clientSD, vector, nbufs);
-
+         // Error check
          if (bytesWritten < nbufs * bufsize) {
             cerr << "Error writing to socket (type 2)" << endl;
             close(clientSD);
@@ -191,6 +173,7 @@ int main(int argc, char* argv[]) {
          int totalSent = 0;
          while (totalSent < BUFFSIZE) {
             bytesWritten = write(clientSD, databuf, BUFFSIZE - totalSent);
+            // Error check
             if (bytesWritten < 0) {
                cerr << "Error writing to socket (type 3)" << endl;
                close(clientSD);
@@ -200,6 +183,7 @@ int main(int argc, char* argv[]) {
          }
       }
    }
+
    // End test & calculate duration
    auto end = chrono::high_resolution_clock::now();
    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
@@ -214,6 +198,8 @@ int main(int argc, char* argv[]) {
       close(clientSD);
       return -1;
    }
+
+   // Convert runs_net
    int32_t numRuns = ntohl(runs_net);
 
    // Calculate Gbps
